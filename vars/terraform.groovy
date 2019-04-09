@@ -61,7 +61,7 @@ def call() {
             set +o xtrace
             set -o errexit
 
-            curl --location https://dcos-terraform-mappings.mesosphere.com/ > tfdescsan.tsv
+            wget -O tfdescsan.tsv https://dcos-terraform-mappings.mesosphere.com/
           """
           stash includes: 'tfdescsan.tsv', name: 'tfdescsan.tsv'
         }
