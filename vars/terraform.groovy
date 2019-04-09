@@ -77,9 +77,13 @@ def call() {
             set +o xtrace
             set -o errexit
 
-            for tf in ./*.tf; do
-              tfdescsan --test --tsv tfdescsan.tsv --var \${tf} \
-                --cloud \"\$(echo \${PWD##*/terraform-} | sed -E \"s/(rm)?-.*//\")\"
+            CLOUD=\$(echo \${JOB_NAME##*/terraform-} | sed -E \"s/(rm)?-.*//\")
+            echo "Detected cloud: \${CLOUD}"
+            FILES=\$(egrep -H -r '^(variable \")|^(output \")' *.tf | cut -d: -f1 | uniq | sed 's/:.*//')
+
+            for tf in \$FILES; do
+              echo "Scanning \${tf}"
+              tfdescsan --test --tsv tfdescsan.tsv --var \${tf} --cloud \"\${CLOUD}\"
             done
           """
         }
