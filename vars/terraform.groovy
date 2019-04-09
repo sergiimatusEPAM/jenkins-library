@@ -79,7 +79,7 @@ def call() {
 
             for tf in ./*.tf; do
               tfdescsan --test --tsv tfdescsan.tsv --var \${tf} \
-                --cloud \"$(echo \${PWD##*/terraform-} | sed -E \"s/(rm)?-.*//\")\"
+                --cloud \"\$(echo \${PWD##*/terraform-} | sed -E \"s/(rm)?-.*//\")\"
             done
           """
         }
