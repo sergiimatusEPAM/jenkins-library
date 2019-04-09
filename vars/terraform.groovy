@@ -53,7 +53,7 @@ def call() {
       }
       stage('Download tfdescan tsv') {
         agent {
-          label 'tfdescan'
+          label 'tfdescsan'
         }
         steps {
           sh """
