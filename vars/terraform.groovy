@@ -44,7 +44,7 @@ def call() {
                 set +o xtrace
                 set -o errexit
 
-                terraform-docs --sort-inputs-by-required md ./ > README.md'
+                terraform-docs --sort-inputs-by-required md ./ > README.md
                 git --no-pager diff --exit-code
               """
             }
