@@ -25,6 +25,7 @@ To provide the library to a specific `GitHub Organization` in the Jenkins instan
 Defines the pipeline to be called for a `dcos-terraform` repository.
 
 ```groovy
+#!/usr/bin/env groovy
 @Library('jenkins-library') _
 
 terraform()
