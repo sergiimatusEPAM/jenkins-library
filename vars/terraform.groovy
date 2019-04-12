@@ -15,7 +15,10 @@ def call() {
                 set +o xtrace
                 set -o errexit
 
-                terraform fmt --check --diff
+                for tf in *.tf; do
+                  echo "FMT checking \${tf}"
+                  terraform fmt --check --diff \${tf}
+                done
               """
             }
           }
