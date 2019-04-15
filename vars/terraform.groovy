@@ -6,11 +6,8 @@ def call() {
       stage('Run Tests') {
         parallel {
           stage('Terraform FMT') {
-            agent {
-              label 'terraform'
-            }
-            steps {
-              sh """
+            agent { label 'terraform' }
+            steps { sh """
                 #!/usr/bin/env sh
                 set +o xtrace
                 set -o errexit
@@ -19,45 +16,34 @@ def call() {
                   echo "FMT checking \${tf}"
                   terraform fmt --check --diff \${tf}
                 done
-              """
-            }
+              """ }
           }
           stage('Terraform validate') {
-            agent {
-              label 'terraform'
-            }
-            steps {
-              sh """
+            agent { label 'terraform' }
+            steps { sh """
                 #!/usr/bin/env sh
                 set +o xtrace
                 set -o errexit
 
                 terraform init --upgrade
                 terraform validate -check-variables=false
-              """
-            }
+              """ }
           }
           stage('Validate README go generated') {
-            agent {
-              label 'terraform'
-            }
-            steps {
-              sh """
+            agent { label 'terraform' }
+            steps { sh """
                 #!/usr/bin/env sh
                 set +o xtrace
                 set -o errexit
 
                 terraform-docs --sort-inputs-by-required md ./ > README.md
                 git --no-pager diff --exit-code
-              """
-            }
+              """ }
           }
         }
       }
       stage('Download tfdescan tsv') {
-        agent {
-          label 'tfdescsan'
-        }
+        agent { label 'tfdescsan' }
         steps {
           sh """
             #!/usr/bin/env sh
@@ -70,9 +56,7 @@ def call() {
         }
       }
       stage('Validate descriptions') {
-        agent {
-          label 'tfdescsan'
-        }
+        agent { label 'tfdescsan' }
         steps {
           unstash 'tfdescsan.tsv'
           sh """
@@ -89,6 +73,25 @@ def call() {
               tfdescsan --test --tsv tfdescsan.tsv --var \${tf} --cloud \"\${CLOUD}\"
             done
           """
+        }
+      }
+      stage('Integration Test') {
+        agent { label 'dcos-terraform-cicd' }
+        steps {
+          withCredentials([
+            [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'dcos-terraform-ci-aws'],
+            azureServicePrincipal('dcos-terraform-ci-azure'),
+            [$class: 'FileBinding', credentialsId: 'dcos-terraform-ci-gcp', variable: 'GOOGLE_APPLICATION_CREDENTIALS']
+          ]) { sh 'chmod +x ci-deploy.sh && ./ci-deploy.sh --build' }
+        }
+        post {
+          always {
+            withCredentials([
+              [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'dcos-terraform-ci-aws'],
+              azureServicePrincipal('dcos-terraform-ci-azure'),
+              [$class: 'FileBinding', credentialsId: 'dcos-terraform-ci-gcp', variable: 'GOOGLE_APPLICATION_CREDENTIALS']
+            ]) { sh './ci-deploy.sh --post_build' }
+          }
         }
       }
     }
