@@ -1,5 +1,6 @@
 #!/usr/bin/env groovy
 def call() {
+  def ci_script_bash = libraryResource 'com/mesosphere/global/ci-deploy.sh'
   pipeline {
     agent none
     stages {
@@ -82,7 +83,10 @@ def call() {
             [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'dcos-terraform-ci-aws'],
             azureServicePrincipal('dcos-terraform-ci-azure'),
             [$class: 'FileBinding', credentialsId: 'dcos-terraform-ci-gcp', variable: 'GOOGLE_APPLICATION_CREDENTIALS']
-          ]) { sh 'chmod +x ci-deploy.sh && ./ci-deploy.sh --build' }
+          ]) {
+            writeFile file: './ci_deploy.sh', text: ci_script_bash
+            sh 'chmod +x ci-deploy.sh && ./ci-deploy.sh --build'
+          }
         }
         post {
           always {
