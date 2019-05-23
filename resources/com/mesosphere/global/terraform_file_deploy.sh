@@ -8,7 +8,7 @@ function build_task() {
   eval "$(ssh-agent)"; if [[ ! -f "$PWD/ssh-key" ]]; then rm ssh-key.pub; ssh-keygen -t rsa -b 4096 -f $PWD/ssh-key -P ''; fi; ssh-add $PWD/ssh-key
   terraform init
   ./deploy.cmd || exit 1 # Deploy
-  # deploy_test_app # disabling the test for the time being
+  deploy_test_app # deploying mlb and nginx test
   ./expand.cmd || exit 1 # Expand
   ./upgrade.cmd || exit 1 # Upgrade
 }
