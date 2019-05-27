@@ -31,4 +31,15 @@ Defines the pipeline to be called for a `dcos-terraform` repository.
 terraform()
 ```
 
+### getTargetBranch
+
+Helper function to get the target branch also on PRs, otherwise the BRANCH_NAME.
+
+```groovy
+#!/usr/bin/env groovy
+@Library('jenkins-library') _
+
+getTargetBranch()
+```
+
 [shared-libraries]: https://jenkins.io/doc/book/pipeline/shared-libraries/
