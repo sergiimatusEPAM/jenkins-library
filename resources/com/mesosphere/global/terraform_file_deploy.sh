@@ -48,7 +48,8 @@ deploy_test_app() {
   sleep 120
   "${TMP_DCOS_TERRAFORM}"/dcos cluster setup "http://$(terraform output cluster-address)" --no-check
   "${TMP_DCOS_TERRAFORM}"/dcos package install --yes marathon-lb
-  while $("${TMP_DCOS_TERRAFORM}"/dcos marathon task list --json | jq '.[].healthCheckResults[].alive' | grep -v true); do echo "waiting for marathon lb"; sleep 60; done
+  readonly command_to_execute="$("${TMP_DCOS_TERRAFORM}"/dcos marathon task list --json | jq '.[].healthCheckResults[].alive' | grep -v true)"
+  while $command_to_execute; do echo "waiting for marathon lb"; sleep 60; done
   "${TMP_DCOS_TERRAFORM}"/dcos marathon app add <<EOF
 {
   "id": "nginx",
@@ -83,7 +84,8 @@ deploy_test_app() {
   }
 }
 EOF
-  while $("${TMP_DCOS_TERRAFORM}"/dcos marathon app show nginx | jq -e '.tasksHealthy != 1'); do echo "waiting for nginx"; sleep 60; done
+  readonly command_to_execute="$("${TMP_DCOS_TERRAFORM}"/dcos marathon app show nginx | jq -e '.tasksHealthy != 1')"
+  while $command_to_execute; do echo "waiting for nginx"; sleep 60; done
   curl -H "Host: testapp.mesosphere.com" "http://$(terraform output public-agents-loadbalancer)" -I | grep -F "Server: nginx/1.15.5"
 }
 
@@ -94,9 +96,9 @@ main() {
     if [ ! -f "ci-deploy.state" ]
     then
       TMP_DCOS_TERRAFORM=$(mktemp -d); echo "TMP_DCOS_TERRAFORM=${TMP_DCOS_TERRAFORM}" > ci-deploy.state
-      LOG_STATE=${TMP_DCOS_TERRAFORM}/log_state; echo "LOG_STATE=${TMP_DCOS_TERRAFORM}/log_state" >> ci-deploy.state
       CI_DEPLOY_STATE=$PWD/ci-deploy.state; echo "CI_DEPLOY_STATE=$PWD/ci-deploy.state" >> ci-deploy.state
       DCOS_CONFIG=${TMP_DCOS_TERRAFORM}; echo "DCOS_CONFIG=${TMP_DCOS_TERRAFORM}" >> ci-deploy.state
+      export LOG_STATE=${TMP_DCOS_TERRAFORM}/log_state; echo "LOG_STATE=${TMP_DCOS_TERRAFORM}/log_state" >> ci-deploy.state
       echo "${DCOS_CONFIG}"
       git clone https://github.com/dcos-terraform/jenkins-library.git
       cp -fr jenkins-library/resources/com/mesosphere/global/terraform-file-dcos-terraform-test-examples/"${2}"-"${3}"/. "${TMP_DCOS_TERRAFORM}" || exit 1
