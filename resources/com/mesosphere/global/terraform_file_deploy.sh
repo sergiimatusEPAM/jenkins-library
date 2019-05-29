@@ -89,7 +89,7 @@ EOF
 }
 EOF
   timeout 5m bash <<EOF || exit 1
-while ${TMP_DCOS_TERRAFORM}/dcos marathon app show nginx | jq -e .tasksHealthy != 1; do
+while ${TMP_DCOS_TERRAFORM}/dcos marathon app show nginx | jq -e '.tasksHealthy != 1'; do
   echo waiting for nginx;
   sleep 30;
 done
