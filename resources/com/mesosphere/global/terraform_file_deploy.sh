@@ -44,13 +44,13 @@ deploy_test_app() {
   esac
   curl https://downloads.dcos.io/binaries/cli/$system/latest/dcos -o "${TMP_DCOS_TERRAFORM}/dcos"
   chmod +x "${TMP_DCOS_TERRAFORM}/dcos"
-  timeout 5m bash <<EOF || echo cannot connect to cluster exiting... && exit 1
+  timeout 5m bash <<EOF || ( echo cannot connect to cluster exiting... && exit 1 )
 until curl -k "https://$(terraform output cluster-address)" >/dev/null 2>&1; do echo "waiting for cluster"; sleep 60; done
 EOF
   sleep 120
   "${TMP_DCOS_TERRAFORM}"/dcos cluster setup "http://$(terraform output cluster-address)" --no-check
   "${TMP_DCOS_TERRAFORM}"/dcos package install --yes marathon-lb
-  timeout 5m bash <<EOF || echo failed to deploy marathon-lb exiting... && exit 1
+  timeout 5m bash <<EOF || ( echo failed to deploy marathon-lb exiting... && exit 1 )
 while ${TMP_DCOS_TERRAFORM}/dcos marathon task list --json | jq .[].healthCheckResults[].alive | grep -v true; do
   echo waiting for marathon-lb;
   sleep 30;
@@ -90,7 +90,7 @@ EOF
   }
 }
 EOF
-  timeout 5m bash <<EOF || echo failed to reach app exiting... && exit 1
+  timeout 5m bash <<EOF || ( echo failed to reach app exiting... && exit 1 )
 while ${TMP_DCOS_TERRAFORM}/dcos marathon app show nginx | jq -e '.tasksHealthy != 1'; do
   echo waiting for nginx;
   sleep 30;
