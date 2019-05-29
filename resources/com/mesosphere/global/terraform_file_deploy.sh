@@ -48,8 +48,12 @@ deploy_test_app() {
   sleep 120
   "${TMP_DCOS_TERRAFORM}"/dcos cluster setup "http://$(terraform output cluster-address)" --no-check
   "${TMP_DCOS_TERRAFORM}"/dcos package install --yes marathon-lb
-  readonly command_to_execute="eval while ${TMP_DCOS_TERRAFORM}/dcos marathon task list --json | jq .[].healthCheckResults[].alive | grep -v true; do echo waiting for nginx; sleep 60; done"
-  $command_to_execute;
+  timeout 5m bash <<EOF || exit 1
+while ${TMP_DCOS_TERRAFORM}/dcos marathon task list --json | jq .[].healthCheckResults[].alive | grep -v true; do
+  echo waiting for marathon-lb;
+  sleep 30;
+done
+EOF
   "${TMP_DCOS_TERRAFORM}"/dcos marathon app add <<EOF
 {
   "id": "nginx",
@@ -84,9 +88,13 @@ deploy_test_app() {
   }
 }
 EOF
-  readonly command_to_execute="eval while ${TMP_DCOS_TERRAFORM}/dcos marathon app show nginx | jq -e .tasksHealthy != 1; do echo waiting for nginx; sleep 60; done"
-  $command_to_execute
-  curl -H "Host: testapp.mesosphere.com" "http://$(terraform output public-agents-loadbalancer)" -I | grep -F "Server: nginx/1.15.5"
+  timeout 5m bash <<EOF || exit 1
+while ${TMP_DCOS_TERRAFORM}/dcos marathon app show nginx | jq -e .tasksHealthy != 1; do
+  echo waiting for nginx;
+  sleep 30;
+done
+EOF
+  curl -H "Host: testapp.mesosphere.com" "http://$(terraform output public-agents-loadbalancer)" -I | grep -F "Server: nginx/1.15.5" || exit 1
 }
 
 main() {
