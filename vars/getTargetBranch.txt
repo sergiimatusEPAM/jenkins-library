@@ -1,0 +1,2 @@
+# Description
+Helper function to get the target branch also on PRs, otherwise the BRANCH_NAME.

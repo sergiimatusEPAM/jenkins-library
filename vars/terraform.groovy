@@ -9,7 +9,8 @@ def call() {
           stage('Terraform FMT') {
             agent { label 'terraform' }
             steps {
-              ansiColor('xterm') { sh """
+              ansiColor('xterm') {
+                sh """
                   #!/usr/bin/env sh
                   set +o xtrace
                   set -o errexit
@@ -18,33 +19,38 @@ def call() {
                     echo "FMT checking \${tf}"
                     terraform fmt --check --diff \${tf}
                   done
-                """ }
+                """
+              }
             }
           }
           stage('Terraform validate') {
             agent { label 'terraform' }
             steps {
-              ansiColor('xterm') { sh """
+              ansiColor('xterm') {
+                sh """
                   #!/usr/bin/env sh
                   set +o xtrace
                   set -o errexit
 
                   terraform init --upgrade
                   terraform validate -check-variables=false
-                """ }
+                """
+              }
             }
           }
           stage('Validate README go generated') {
             agent { label 'terraform' }
             steps {
-              ansiColor('xterm') { sh """
+              ansiColor('xterm') {
+                sh """
                   #!/usr/bin/env sh
                   set +o xtrace
                   set -o errexit
 
                   terraform-docs --sort-inputs-by-required md ./ > README.md
                   git --no-pager diff --exit-code
-                """ }
+                """
+              }
             }
           }
         }
@@ -152,8 +158,4 @@ def call() {
       }
     }
   }
-}
-
-def getTargetBranch() {
-  return env.CHANGE_TARGET ? env.CHANGE_TARGET : env.BRANCH_NAME
 }
