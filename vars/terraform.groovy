@@ -127,7 +127,7 @@ def call() {
                 set +o xtrace
                 set -o errexit
 
-                sh ./ci-deploy.sh --build ${PROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION}
+                bash ./ci-deploy.sh --build ${PROVIDER} 0.2.x
               """
             }
           }
@@ -149,7 +149,7 @@ def call() {
                   set +o xtrace
                   set -o errexit
 
-                  sh ./ci-deploy.sh --post_build ${PROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION}
+                  bash ./ci-deploy.sh --post_build ${PROVIDER} 0.2.x
                 """
               }
             }
