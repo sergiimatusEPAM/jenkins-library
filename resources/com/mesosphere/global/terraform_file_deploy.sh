@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
+set +o xtrace
+set -o errexit
 
 build_task() {
   set -x
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
   chmod +x ./*.cmd # make all cmd runnable
   generate_terraform_file "${GIT_URL}" "${GIT_COMMIT}"
-  eval "$(ssh-agent)"; if [ ! -f "$PWD/ssh-key" ]; then rm ssh-key.pub; ssh-keygen -t rsa -b 4096 -f "${PWD}"/ssh-key -P ''; fi; ssh-add "${PWD}"/ssh-key
+  eval "$(ssh-agent)";
+  if [ ! -f "$PWD/ssh-key" ]; then
+    rm ssh-key.pub; ssh-keygen -t rsa -b 4096 -f "${PWD}"/ssh-key -P '';
+  fi
+  ssh-add "${PWD}"/ssh-key
   terraform init
   ./deploy.cmd || exit 1 # Deploy
   deploy_test_app # deploying mlb and nginx test
@@ -103,19 +109,25 @@ main() {
   set -x
   if [ $# -eq 3 ]; then
     # ENV variables
-    if [ ! -f "ci-deploy.state" ]
-    then
-      TMP_DCOS_TERRAFORM=$(mktemp -d --tmpdir=${WORKSPACE}); echo "TMP_DCOS_TERRAFORM=${TMP_DCOS_TERRAFORM}" > ci-deploy.state
-      CI_DEPLOY_STATE=$PWD/ci-deploy.state; echo "CI_DEPLOY_STATE=$PWD/ci-deploy.state" >> ci-deploy.state
-      DCOS_CONFIG=${TMP_DCOS_TERRAFORM}; echo "DCOS_CONFIG=${TMP_DCOS_TERRAFORM}" >> ci-deploy.state
-      export LOG_STATE=${TMP_DCOS_TERRAFORM}/log_state; echo "LOG_STATE=${TMP_DCOS_TERRAFORM}/log_state" >> ci-deploy.state
-      echo "${DCOS_CONFIG}"
-      cp -fr ${WORKSPACE}/"${2}"-"${3}"/. "${TMP_DCOS_TERRAFORM}" || exit 1
-    else
+    if [ -f "ci-deploy.state"  ]; then
       eval "$(cat ci-deploy.state)"
     fi
 
-    if [ -z "${WORKSPACE}" ]; then echo "Updating ENV for non-Jenkins env";
+    if [ ! -z "${TMP_DCOS_TERRAFORM}" ] && [ ! -d "${TMP_DCOS_TERRAFORM}" ]; then
+      TMP_DCOS_TERRAFORM=$(mktemp -d --tmpdir=${WORKSPACE});
+      echo "TMP_DCOS_TERRAFORM=${TMP_DCOS_TERRAFORM}" > ci-deploy.state
+      CI_DEPLOY_STATE=$PWD/ci-deploy.state;
+      echo "CI_DEPLOY_STATE=$PWD/ci-deploy.state" >> ci-deploy.state
+      DCOS_CONFIG=${TMP_DCOS_TERRAFORM};
+      echo "DCOS_CONFIG=${TMP_DCOS_TERRAFORM}" >> ci-deploy.state
+      export LOG_STATE=${TMP_DCOS_TERRAFORM}/log_state;
+      echo "LOG_STATE=${TMP_DCOS_TERRAFORM}/log_state" >> ci-deploy.state
+      echo "${DCOS_CONFIG}"
+      cp -fr ${WORKSPACE}/"${2}"-"${3}"/. "${TMP_DCOS_TERRAFORM}" || exit 1
+    fi
+
+    if [ -z "${WORKSPACE}" ]; then
+      echo "Updating ENV for non-Jenkins env";
       WORKSPACE=$PWD;
       GIT_URL=$(git -C "${WORKSPACE}" remote -v | grep origin | tail -1 | awk '{print "${2}"}');
       GIT_COMMIT=$(git -C "${WORKSPACE}" rev-parse HEAD);
@@ -131,5 +143,4 @@ main() {
   exit 1
 }
 
-set +x
 main "$@"
