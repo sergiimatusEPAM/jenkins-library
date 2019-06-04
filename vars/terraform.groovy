@@ -4,8 +4,6 @@ def call() {
     agent none
     environment {
       TARGET_BRANCH = getTargetBranch()
-      GOOGLE_APPLICATION_CREDENTIALS = credentials('dcos-terraform-ci-gcp')
-      TF_VAR_dcos_license_key_contents = credentials('dcos-license')
     }
     stages {
       stage('Run Tests') {
@@ -115,6 +113,10 @@ def call() {
           }
         }
         agent { label 'dcos-terraform-cicd' }
+        environment {
+          GOOGLE_APPLICATION_CREDENTIALS = credentials('dcos-terraform-ci-gcp')
+          TF_VAR_dcos_license_key_contents = credentials('dcos-license')
+        }
         steps {
           ansiColor('xterm') {
             withCredentials([
