@@ -139,13 +139,6 @@ def call() {
                 def main_tf = libraryResource "com/mesosphere/global/terraform-file-dcos-terraform-test-examples/${PROVIDER}-${UNIVERSAL_INSTALLER_BASE_VERSION}/main.tf"
                 writeFile file: "${PROVIDER}-${UNIVERSAL_INSTALLER_BASE_VERSION}/main.tf", text: main_tf
               }
-              sh """
-                #!/usr/bin/env sh
-                set +o xtrace
-                set -o errexit
-
-                cd ${WORKSPACE}
-              """
               script {
                 def ci_script_bash = libraryResource 'com/mesosphere/global/terraform_file_deploy.sh'
                 writeFile file: 'ci-deploy.sh', text: ci_script_bash
