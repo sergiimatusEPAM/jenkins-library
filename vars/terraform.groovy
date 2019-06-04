@@ -97,7 +97,7 @@ def call() {
         steps {
           script {
             env.PROVIDER = sh (returnStdout: true, script: "echo ${env.GIT_URL} | egrep -o 'terraform-\\w+-.*'| cut -d'-' -f2").trim()
-            env.UNIVERSAL_INSTALLER_BASE_VERSION = sh (returnStdout: true, script: "git describe --abbrev=0 --tags | sed 's/.[0-9]$/.x/'").trim()
+            env.UNIVERSAL_INSTALLER_BASE_VERSION = sh (returnStdout: true, script: "git describe --abbrev=0 --tags | sed 's/.[0-9]\$/.x/'").trim()
             env.IS_UNIVERSAL_INSTALLER = sh (returnStdout: true, script: "TFENV=\$(echo ${env.GIT_URL} | egrep -o 'terraform-\\w+-.*'); [ -z \$TFENV ] || echo 'YES'").trim()
           }
         }
