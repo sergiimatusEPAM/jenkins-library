@@ -97,7 +97,7 @@ def call() {
         steps {
           script {
             env.PROVIDER = sh (returnStdout: true, script: "echo ${env.GIT_URL} | egrep -o 'terraform-\\w+-.*'| cut -d'-' -f2").trim()
-            env.UNIVERSAL_INSTALLER_BASE_VERSION = sh (returnStdout: true, script: "echo ${env.TARGET_BRANCH} | cut -d'/' -f2 -s").trim()
+            env.UNIVERSAL_INSTALLER_BASE_VERSION = sh (returnStdout: true, script: "git describe --abbrev=0 --tags | sed 's/.[0-9]$/.x/'").trim()
             env.IS_UNIVERSAL_INSTALLER = sh (returnStdout: true, script: "TFENV=\$(echo ${env.GIT_URL} | egrep -o 'terraform-\\w+-.*'); [ -z \$TFENV ] || echo 'YES'").trim()
           }
         }
@@ -118,6 +118,35 @@ def call() {
               azureServicePrincipal('dcos-terraform-ci-azure'),
               file(credentialsId: 'dcos-terraform-ci-gcp', variable: 'GOOGLE_APPLICATION_CREDENTIALS')
             ]) {
+              sh """
+                #!/usr/bin/env sh
+                set +o xtrace
+                set -o errexit
+
+                mkdir -p ${WORKSPACE}/${PROVIDER}-${UNIVERSAL_INSTALLER_BASE_VERSION}
+                cd ${WORKSPACE}/${PROVIDER}-${UNIVERSAL_INSTALLER_BASE_VERSION}
+              """
+              script {
+                def deploy_cmd = libraryResource "com/mesosphere/global/terraform-file-dcos-terraform-test-examples/${PROVIDER}-${UNIVERSAL_INSTALLER_BASE_VERSION}/deploy.cmd"
+                writeFile file: 'deploy.cmd', text: deploy_cmd
+                def expand_cmd = libraryResource "com/mesosphere/global/terraform-file-dcos-terraform-test-examples/${PROVIDER}-${UNIVERSAL_INSTALLER_BASE_VERSION}/expand.cmd"
+                writeFile file: 'expand.cmd', text: expand_cmd
+                def upgrade_cmd = libraryResource "com/mesosphere/global/terraform-file-dcos-terraform-test-examples/${PROVIDER}-${UNIVERSAL_INSTALLER_BASE_VERSION}/upgrade.cmd"
+                writeFile file: 'upgrade.cmd', text: upgrade_cmd
+                def destroy_cmd = libraryResource "com/mesosphere/global/terraform-file-dcos-terraform-test-examples/${PROVIDER}-${UNIVERSAL_INSTALLER_BASE_VERSION}/destroy.cmd"
+                writeFile file: 'destroy.cmd', text: destroy_cmd
+                def ssh_key_pub = libraryResource "com/mesosphere/global/terraform-file-dcos-terraform-test-examples/${PROVIDER}-${UNIVERSAL_INSTALLER_BASE_VERSION}/ssh-key.pub"
+                writeFile file: 'ssh-key.pub', text: ssh_key_pub
+                def main_tf = libraryResource "com/mesosphere/global/terraform-file-dcos-terraform-test-examples/${PROVIDER}-${UNIVERSAL_INSTALLER_BASE_VERSION}/main.tf"
+                writeFile file: 'main.tf', text: main_tf
+              }
+              sh """
+                #!/usr/bin/env sh
+                set +o xtrace
+                set -o errexit
+
+                cd ${WORKSPACE}
+              """
               script {
                 def ci_script_bash = libraryResource 'com/mesosphere/global/terraform_file_deploy.sh'
                 writeFile file: 'ci-deploy.sh', text: ci_script_bash
@@ -127,7 +156,7 @@ def call() {
                 set +o xtrace
                 set -o errexit
 
-                bash ./ci-deploy.sh --build ${PROVIDER} 0.2.x
+                bash ./ci-deploy.sh --build ${PROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION}
               """
             }
           }
@@ -149,7 +178,7 @@ def call() {
                   set +o xtrace
                   set -o errexit
 
-                  bash ./ci-deploy.sh --post_build ${PROVIDER} 0.2.x
+                  bash ./ci-deploy.sh --post_build ${PROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION}
                 """
               }
             }

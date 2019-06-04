@@ -4,7 +4,7 @@ build_task() {
   set -x
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
   chmod +x ./*.cmd # make all cmd runnable
-  generate_terraform_file "${GIT_URL}" "${CHANGE_BRANCH:-$BRANCH_NAME}"
+  generate_terraform_file "${GIT_URL}" "${GIT_COMMIT}"
   eval "$(ssh-agent)"; if [ ! -f "$PWD/ssh-key" ]; then rm ssh-key.pub; ssh-keygen -t rsa -b 4096 -f "${PWD}"/ssh-key -P ''; fi; ssh-add "${PWD}"/ssh-key
   terraform init
   ./deploy.cmd || exit 1 # Deploy
@@ -21,7 +21,7 @@ generate_terraform_file() {
   cat <<EOF | tee Terraformfile
 {
   "dcos-terraform/${TF_MODULE_NAME}/${PROVIDER}": {
-    "source":"git::${1}?ref=${2}"
+    "source":"git::${1}?commits=${GIT_COMMIT}"
   }
 }
 EOF
@@ -110,8 +110,7 @@ main() {
       DCOS_CONFIG=${TMP_DCOS_TERRAFORM}; echo "DCOS_CONFIG=${TMP_DCOS_TERRAFORM}" >> ci-deploy.state
       export LOG_STATE=${TMP_DCOS_TERRAFORM}/log_state; echo "LOG_STATE=${TMP_DCOS_TERRAFORM}/log_state" >> ci-deploy.state
       echo "${DCOS_CONFIG}"
-      git clone https://github.com/dcos-terraform/jenkins-library.git
-      cp -fr jenkins-library/resources/com/mesosphere/global/terraform-file-dcos-terraform-test-examples/"${2}"-"${3}"/. "${TMP_DCOS_TERRAFORM}" || exit 1
+      cp -fr ${WORKSPACE}/"${2}"-"${3}"/. "${TMP_DCOS_TERRAFORM}" || exit 1
     else
       eval "$(cat ci-deploy.state)"
     fi
@@ -119,7 +118,7 @@ main() {
     if [ -z "${WORKSPACE}" ]; then echo "Updating ENV for non-Jenkins env";
       WORKSPACE=$PWD;
       GIT_URL=$(git -C "${WORKSPACE}" remote -v | grep origin | tail -1 | awk '{print "${2}"}');
-      CHANGE_BRANCH=$(git -C "${WORKSPACE}" branch | awk "{print ${2}}");
+      GIT_COMMIT=$(git -C "${WORKSPACE}" rev-parse HEAD);
     fi
     # End of ENV variables
   fi
