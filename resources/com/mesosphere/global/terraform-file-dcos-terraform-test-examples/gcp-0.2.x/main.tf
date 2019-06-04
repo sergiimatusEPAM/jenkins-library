@@ -35,10 +35,11 @@ module "dcos" {
     google = "google"
   }
 
-  # dcos_variant              = "ee"
-  # dcos_license_key_contents = "${file("./license.txt")}"
-  dcos_variant = "open"
+  dcos_variant              = "ee"
+  dcos_license_key_contents = "${var.dcos_license_key_contents}"
 }
+
+variable "dcos_license_key_contents" {}
 
 variable "dcos_version" {
   default = "1.13.1"

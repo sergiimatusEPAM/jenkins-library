@@ -2,7 +2,11 @@
 def call() {
   pipeline {
     agent none
-    environment { TARGET_BRANCH = getTargetBranch() }
+    environment {
+      TARGET_BRANCH = getTargetBranch()
+      GOOGLE_APPLICATION_CREDENTIALS = credentials('dcos-terraform-ci-gcp')
+      TF_VAR_dcos_license_key_contents = credentials('dcos-license')
+    }
     stages {
       stage('Run Tests') {
         parallel {
@@ -115,8 +119,7 @@ def call() {
           ansiColor('xterm') {
             withCredentials([
               [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'dcos-terraform-ci-aws'],
-              azureServicePrincipal('dcos-terraform-ci-azure'),
-              file(credentialsId: 'dcos-terraform-ci-gcp', variable: 'GOOGLE_APPLICATION_CREDENTIALS')
+              azureServicePrincipal('dcos-terraform-ci-azure')
             ]) {
               sh """
                 #!/usr/bin/env sh
@@ -158,8 +161,7 @@ def call() {
             ansiColor('xterm') {
               withCredentials([
                 [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'dcos-terraform-ci-aws'],
-                azureServicePrincipal('dcos-terraform-ci-azure'),
-                file(credentialsId: 'dcos-terraform-ci-gcp', variable: 'GOOGLE_APPLICATION_CREDENTIALS')
+                azureServicePrincipal('dcos-terraform-ci-azure')
               ]) {
                 script {
                   def ci_script_bash = libraryResource 'com/mesosphere/global/terraform_file_deploy.sh'

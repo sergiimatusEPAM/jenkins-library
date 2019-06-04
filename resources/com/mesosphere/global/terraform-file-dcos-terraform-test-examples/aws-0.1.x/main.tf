@@ -38,9 +38,8 @@ module "dcos" {
     aws = "aws"
   }
 
-  # dcos_variant              = "ee"
-  # dcos_license_key_contents = "${file("./license.txt")}"
-  dcos_variant = "open"
+  dcos_variant              = "ee"
+  dcos_license_key_contents = "${var.dcos_license_key_contents}"
 
   dcos_install_mode = "${var.dcos_install_mode}"
 }
@@ -49,6 +48,8 @@ variable "dcos_install_mode" {
   description = "specifies which type of command to execute. Options: install or upgrade"
   default     = "install"
 }
+
+variable "dcos_license_key_contents" {}
 
 variable "dcos_version" {
   default = "1.13.1"
