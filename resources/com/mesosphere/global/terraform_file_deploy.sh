@@ -6,7 +6,7 @@ build_task() {
   set -x
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
   chmod +x ./*.cmd # make all cmd runnable
-  generate_terraform_file "${GIT_URL}" "${GIT_COMMIT}"
+  generate_terraform_file "${GIT_URL}" "${CHANGE_BRANCH:-$BRANCH_NAME}"
   eval "$(ssh-agent)";
   if [ ! -f "$PWD/ssh-key" ]; then
     rm ssh-key.pub; ssh-keygen -t rsa -b 4096 -f "${PWD}"/ssh-key -P '';
@@ -27,7 +27,7 @@ generate_terraform_file() {
   cat <<EOF | tee Terraformfile
 {
   "dcos-terraform/${TF_MODULE_NAME}/${PROVIDER}": {
-    "source":"git::${1}?commits=${GIT_COMMIT}"
+    "source":"git::${1}?ref=${2}"
   }
 }
 EOF
@@ -130,7 +130,7 @@ main() {
       echo "Updating ENV for non-Jenkins env";
       WORKSPACE=$PWD;
       GIT_URL=$(git -C "${WORKSPACE}" remote -v | grep origin | tail -1 | awk '{print "${2}"}');
-      GIT_COMMIT=$(git -C "${WORKSPACE}" rev-parse HEAD);
+      CHANGE_BRANCH=$(git -C "${WORKSPACE}" branch | awk "{print ${2}}");
     fi
     # End of ENV variables
   fi
