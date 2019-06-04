@@ -32,7 +32,7 @@ post_build_task() {
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
   chmod +x ./*.cmd # make all cmd runnable
   ./destroy.cmd || exit 1 # Destroy
-  rm -fr "${CI_DEPLOY_STATE}" "${TMP_DCOS_TERRAFORM}" jenkins-library
+  rm -fr "${CI_DEPLOY_STATE}" "${TMP_DCOS_TERRAFORM}"
 }
 
 deploy_test_app() {
