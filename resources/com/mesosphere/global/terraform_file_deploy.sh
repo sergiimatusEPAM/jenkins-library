@@ -32,7 +32,6 @@ build_task() {
 
 generate_terraform_file() {
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
-  ln -s ${WORKSPACE} ./linked-jenkins-job-workspace
   PROVIDER=$(echo "${1}" | grep -E -o 'terraform-\w+-.*' | cut -d'.' -f 1 | cut -d'-' -f2)
   TF_MODULE_NAME=$(echo "${1}" | grep -E -o 'terraform-\w+-.*' | cut -d'.' -f 1 | cut -d'-' -f3-)
   # we overwrite here the source with the real content of the WORKSPACE as we can rebuild builds in that case
