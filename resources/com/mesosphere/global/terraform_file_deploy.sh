@@ -3,9 +3,7 @@ set +o xtrace
 set -o errexit
 
 build_task() {
-  set -x
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
-  chmod +x ./*.cmd # make all cmd runnable
   generate_terraform_file "${GIT_URL}" "${CHANGE_BRANCH:-$BRANCH_NAME}"
   eval "$(ssh-agent)";
   if [ ! -f "$PWD/ssh-key" ]; then
@@ -13,14 +11,24 @@ build_task() {
   fi
   ssh-add "${PWD}"/ssh-key
   terraform init
-  ./deploy.cmd || exit 1 # Deploy
-  deploy_test_app # deploying mlb and nginx test
-  ./expand.cmd || exit 1 # Expand
-  ./upgrade.cmd || exit 1 # Upgrade
+  # Deploy
+  export TF_VAR_dcos_version="${DCOS_VERSION}"
+  terraform apply -auto-approve
+  # deploying mlb and nginx test
+  deploy_test_app
+  # Expand
+  export TF_VAR_num_public_agents="${EXPAND_NUM_PUBLIC_AGENTS:-2}"
+  export TF_VAR_num_private_agents="${EXPAND_NUM_PRIVATE_AGENTS:-2}"
+  terraform apply -auto-approve
+  # Upgrade
+  export TF_VAR_dcos_version="${DCOS_VERSION_UPGRADE:-$DCOS_VERSION}"
+  if [ "${1}" == "0.1.x" ]; then
+    export TF_VAR_dcos_install_mode="upgrade"
+  fi
+  terraform apply -auto-approve
 }
 
 generate_terraform_file() {
-  set -x
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
   PROVIDER=$(echo "${1}" | grep -E -o 'terraform-\w+-.*' | cut -d'.' -f 1 | cut -d'-' -f2)
   TF_MODULE_NAME=$(echo "${1}" | grep -E -o 'terraform-\w+-.*' | cut -d'.' -f 1 | cut -d'-' -f3-)
@@ -34,15 +42,12 @@ EOF
 }
 
 post_build_task() {
-  set -x
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
-  chmod +x ./*.cmd # make all cmd runnable
-  ./destroy.cmd || exit 1 # Destroy
+  terraform destroy -auto-approve
   rm -fr "${CI_DEPLOY_STATE}" "${TMP_DCOS_TERRAFORM}"
 }
 
 deploy_test_app() {
-  set -x
   case "$(uname -s).$(uname -m)" in
     Linux.x86_64) system=linux/x86-64;;
     Darwin.x86_64) system=darwin/x86-64;;
@@ -106,7 +111,6 @@ EOF
 }
 
 main() {
-  set -x
   if [ $# -eq 3 ]; then
     # ENV variables
     if [ -f "ci-deploy.state"  ]; then
@@ -136,7 +140,7 @@ main() {
   fi
 
   case "${1}" in
-    --build) build_task; exit 0;;
+    --build) build_task "${3}"; exit 0;;
     --post_build) post_build_task; exit 0;;
   esac
   echo "invalid parameter ${1}. Must be one of --build or --post_build <provider> <version>"

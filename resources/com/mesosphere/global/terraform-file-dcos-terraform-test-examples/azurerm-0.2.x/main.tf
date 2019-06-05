@@ -22,11 +22,16 @@ module "dcos" {
   num_public_agents  = "${var.num_public_agents}"
 
   dcos_oauth_enabled = "false"
+  dcos_security      = "strict"
 
   dcos_version = "${var.dcos_version}"
 
-  dcos_variant              = "ee"
+  dcos_variant              = "${var.dcos_variant}"
   dcos_license_key_contents = "${var.dcos_license_key_contents}"
+}
+
+variable "dcos_variant" {
+  default = "ee"
 }
 
 variable "dcos_license_key_contents" {}

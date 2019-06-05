@@ -28,15 +28,24 @@ module "dcos" {
   dcos_version = "${var.dcos_version}"
 
   dcos_oauth_enabled = "false"
+  dcos_security      = "strict"
 
-  dcos_instance_os = "centos_7.5"
+  dcos_instance_os = "${var.dcos_instance_os}"
 
   providers = {
     google = "google"
   }
 
-  dcos_variant              = "ee"
+  dcos_variant              = "${var.dcos_variant}"
   dcos_license_key_contents = "${var.dcos_license_key_contents}"
+}
+
+variable "dcos_instance_os" {
+  default = "centos_7.5"
+}
+
+variable "dcos_variant" {
+  default = "ee"
 }
 
 variable "dcos_license_key_contents" {}

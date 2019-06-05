@@ -1,5 +1,4 @@
 provider "aws" {
-  # Change your default region here
   region = "us-east-1"
 }
 
@@ -27,29 +26,54 @@ module "dcos" {
   dcos_version = "${var.dcos_version}"
 
   dcos_oauth_enabled = "false"
+  dcos_security      = "strict"
 
-  dcos_instance_os             = "centos_7.5"
-  bootstrap_instance_type      = "t2.large"
-  masters_instance_type        = "t2.large"
-  private_agents_instance_type = "t2.large"
-  public_agents_instance_type  = "t2.large"
+  dcos_instance_os             = "${var.dcos_instance_os}"
+  bootstrap_instance_type      = "${var.bootstrap_instance_type}"
+  masters_instance_type        = "${var.masters_instance_type}"
+  private_agents_instance_type = "${var.private_agents_instance_type}"
+  public_agents_instance_type  = "${var.public_agents_instance_type}"
 
   providers = {
     aws = "aws"
   }
 
-  dcos_variant              = "ee"
+  dcos_variant              = "${var.dcos_variant}"
   dcos_license_key_contents = "${var.dcos_license_key_contents}"
 
   dcos_install_mode = "${var.dcos_install_mode}"
 }
 
+variable "dcos_instance_os" {
+  default = "centos_7.5"
+}
+
+variable "bootstrap_instance_type" {
+  default = "m4.xlarge"
+}
+
+variable "masters_instance_type" {
+  default = "t2.large"
+}
+
+variable "private_agents_instance_type" {
+  default = "t2.large"
+}
+
+variable "public_agents_instance_type" {
+  default = "t2.large"
+}
+
+variable "dcos_variant" {
+  default = "ee"
+}
+
+variable "dcos_license_key_contents" {}
+
 variable "dcos_install_mode" {
   description = "specifies which type of command to execute. Options: install or upgrade"
   default     = "install"
 }
-
-variable "dcos_license_key_contents" {}
 
 variable "dcos_version" {
   default = "1.13.1"
