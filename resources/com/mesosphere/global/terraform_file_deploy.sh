@@ -20,22 +20,25 @@ build_task() {
   export TF_VAR_num_public_agents="${EXPAND_NUM_PUBLIC_AGENTS:-2}"
   export TF_VAR_num_private_agents="${EXPAND_NUM_PRIVATE_AGENTS:-2}"
   terraform apply -auto-approve
-  # Upgrade
-  export TF_VAR_dcos_version="${DCOS_VERSION_UPGRADE:-$DCOS_VERSION}"
-  if [ "${1}" == "0.1.x" ]; then
-    export TF_VAR_dcos_install_mode="upgrade"
+  # Upgrade, only if DCOS_VERSION_UPGRADE not empty and not matching DCOS_VERSION
+  if [ ! -z "${DCOS_VERSION_UPGRADE}" ] && [ "${DCOS_VERSION_UPGRADE}" != "${DCOS_VERSION}" ]; then
+    export TF_VAR_dcos_version="${DCOS_VERSION_UPGRADE}"
+    if [ "${1}" == "0.1.x" ]; then
+      export TF_VAR_dcos_install_mode="upgrade"
+    fi
+    terraform apply -auto-approve
   fi
-  terraform apply -auto-approve
 }
 
 generate_terraform_file() {
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
   PROVIDER=$(echo "${1}" | grep -E -o 'terraform-\w+-.*' | cut -d'.' -f 1 | cut -d'-' -f2)
   TF_MODULE_NAME=$(echo "${1}" | grep -E -o 'terraform-\w+-.*' | cut -d'.' -f 1 | cut -d'-' -f3-)
+  # we overwrite here the source with the real content of the WORKSPACE as we can rebuild builds in that case
   cat <<EOF | tee Terraformfile
 {
   "dcos-terraform/${TF_MODULE_NAME}/${PROVIDER}": {
-    "source":"git::${1}?ref=${2}"
+    "source":"../"
   }
 }
 EOF
