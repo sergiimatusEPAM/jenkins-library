@@ -63,6 +63,7 @@ deploy_test_app() {
   echo "waiting for cluster"
   curl --insecure \
     --location \
+    --silent \
     --connect-timeout 5 \
     --max-time 10 \
     --retry 30 \
@@ -73,8 +74,8 @@ deploy_test_app() {
     -o /dev/null \
     "https://$(terraform output cluster-address)"
   sleep 120
-  "${TMP_DCOS_TERRAFORM}"/dcos cluster setup --username=bootstrapuser --password=deleteme "https://$(terraform output cluster-address)" --no-check
-  "${TMP_DCOS_TERRAFORM}"/dcos package install --yes marathon-lb
+  "${TMP_DCOS_TERRAFORM}"/dcos cluster setup "https://$(terraform output cluster-address)" --no-check --insecure --username=bootstrapuser --password=deleteme || exit 1
+  "${TMP_DCOS_TERRAFORM}"/dcos package install --yes marathon-lb || exit 1
   timeout 5m bash <<EOF || ( echo failed to deploy marathon-lb exiting... && exit 1 )
 while ${TMP_DCOS_TERRAFORM}/dcos marathon task list --json | jq .[].healthCheckResults[].alive | grep -v true; do
   echo waiting for marathon-lb;
@@ -121,7 +122,7 @@ while ${TMP_DCOS_TERRAFORM}/dcos marathon app show nginx | jq -e '.tasksHealthy 
   sleep 30;
 done
 EOF
-  curl -H "Host: testapp.mesosphere.com" "http://$(terraform output public-agents-loadbalancer)" -I | grep -F "Server: nginx/1.15.5" || exit 1
+  curl -I -H "Host: testapp.mesosphere.com" "http://$(terraform output public-agents-loadbalancer)" | grep -F "Server: nginx/1.15.5" || exit 1
 }
 
 main() {
