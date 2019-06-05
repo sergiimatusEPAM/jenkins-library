@@ -2,9 +2,6 @@
 def call() {
   pipeline {
     agent none
-    environment {
-      TARGET_BRANCH = getTargetBranch()
-    }
     stages {
       stage('Run Tests') {
         parallel {

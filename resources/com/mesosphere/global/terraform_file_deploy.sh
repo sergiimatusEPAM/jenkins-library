@@ -4,7 +4,7 @@ set -o errexit
 
 build_task() {
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
-  generate_terraform_file "${GIT_URL}" "${CHANGE_BRANCH:-$BRANCH_NAME}"
+  generate_terraform_file "${GIT_URL}"
   eval "$(ssh-agent)";
   if [ ! -f "$PWD/ssh-key" ]; then
     rm ssh-key.pub; ssh-keygen -t rsa -b 4096 -f "${PWD}"/ssh-key -P '';
@@ -15,7 +15,9 @@ build_task() {
   export TF_VAR_dcos_version="${DCOS_VERSION}"
   terraform apply -auto-approve
   # deploying mlb and nginx test
+  set +o errexit
   deploy_test_app
+  set -o errexit
   # Expand
   export TF_VAR_num_public_agents="${EXPAND_NUM_PUBLIC_AGENTS:-2}"
   export TF_VAR_num_private_agents="${EXPAND_NUM_PRIVATE_AGENTS:-2}"
@@ -58,9 +60,18 @@ deploy_test_app() {
   esac
   curl https://downloads.dcos.io/binaries/cli/$system/latest/dcos -o "${TMP_DCOS_TERRAFORM}/dcos"
   chmod +x "${TMP_DCOS_TERRAFORM}/dcos"
-  timeout 5m bash <<EOF || ( echo cannot connect to cluster exiting... && exit 1 )
-until curl -k "https://$(terraform output cluster-address)" >/dev/null 2>&1; do echo "waiting for cluster"; sleep 60; done
-EOF
+  echo "waiting for cluster"
+  curl --insecure \
+    --location \
+    --connect-timeout 5 \
+    --max-time 10 \
+    --retry 30 \
+    --retry-delay 0 \
+    --retry-max-time 310 \
+    --retry-connrefuse \
+    -w "Cluster reached\nType: %{content_type}\nCode: %{response_code}\n" \
+    -o /dev/null \
+    "https://$(terraform output cluster-address)"
   sleep 120
   "${TMP_DCOS_TERRAFORM}"/dcos cluster setup --username=bootstrapuser --password=deleteme "https://$(terraform output cluster-address)" --no-check
   "${TMP_DCOS_TERRAFORM}"/dcos package install --yes marathon-lb
@@ -137,7 +148,6 @@ main() {
       echo "Updating ENV for non-Jenkins env";
       WORKSPACE=$PWD;
       GIT_URL=$(git -C "${WORKSPACE}" remote -v | grep origin | tail -1 | awk '{print "${2}"}');
-      CHANGE_BRANCH=$(git -C "${WORKSPACE}" branch | awk "{print ${2}}");
     fi
     # End of ENV variables
   fi
