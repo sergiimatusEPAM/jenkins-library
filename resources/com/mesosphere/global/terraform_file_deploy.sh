@@ -122,7 +122,17 @@ while ${TMP_DCOS_TERRAFORM}/dcos marathon app show nginx | jq -e '.tasksHealthy 
   sleep 30;
 done
 EOF
-  curl -I -H "Host: testapp.mesosphere.com" "http://$(terraform output public-agents-loadbalancer)" | grep -F "Server: nginx/1.15.5" || exit 1
+  curl -I \
+    --silent \
+    --connect-timeout 5 \
+    --max-time 10 \
+    --retry 5 \
+    --retry-delay 0 \
+    --retry-max-time 50 \
+    --retry-connrefuse \
+    -H "Host: testapp.mesosphere.com" \
+    "http://$(terraform output public-agents-loadbalancer)" \
+      | grep -F "Server: nginx/1.15.5" || exit 1
 }
 
 main() {
