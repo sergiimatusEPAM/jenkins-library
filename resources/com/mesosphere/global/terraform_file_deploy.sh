@@ -39,7 +39,7 @@ generate_terraform_file() {
   cat <<EOF | tee Terraformfile
 {
   "dcos-terraform/${TF_MODULE_NAME}/${PROVIDER}": {
-    "source":"./linked-jenkins-job-workspace"
+    "source":"./../../../../../linked-jenkins-job-workspace"
   }
 }
 EOF
