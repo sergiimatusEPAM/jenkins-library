@@ -38,7 +38,7 @@ generate_terraform_file() {
   cat <<EOF | tee Terraformfile
 {
   "dcos-terraform/${TF_MODULE_NAME}/${PROVIDER}": {
-    "source":"../"
+    "source":"../."
   }
 }
 EOF
