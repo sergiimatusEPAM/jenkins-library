@@ -56,11 +56,11 @@ deploy_test_app() {
   case "$(uname -s).$(uname -m)" in
     Linux.x86_64) system=linux/x86-64;;
     Darwin.x86_64) system=darwin/x86-64;;
-    *) echo -e "\e[31msorry, there is no binary distribution of dcos-cli for your platform";;
+    *) echo -e "\e[31m sorry, there is no binary distribution of dcos-cli for your platform \e[0m";;
   esac
   curl https://downloads.dcos.io/binaries/cli/$system/latest/dcos -o "${TMP_DCOS_TERRAFORM}/dcos"
   chmod +x "${TMP_DCOS_TERRAFORM}/dcos"
-  echo -e "\e[34mwaiting for the cluster"
+  echo -e "\e[34m waiting for the cluster \e[0m"
   curl --insecure \
     --location \
     --silent \
@@ -73,18 +73,18 @@ deploy_test_app() {
     -w "Type: %{content_type}\nCode: %{response_code}\n" \
     -o /dev/null \
     "https://$(terraform output cluster-address)"
-  echo -e "\e[32mreached the cluster"
+  echo -e "\e[32m reached the cluster \e[0m"
   sleep 120
   "${TMP_DCOS_TERRAFORM}"/dcos cluster setup "https://$(terraform output cluster-address)" --no-check --insecure --provider=dcos-users --username=bootstrapuser --password=deleteme || exit 1
   "${TMP_DCOS_TERRAFORM}"/dcos package install --yes marathon-lb || exit 1
-  timeout 5m bash <<EOF || ( echo -e "\e[31mfailed to deploy marathon-lb"... && exit 1 )
+  timeout 5m bash <<EOF || ( echo -e "\e[31m failed to deploy marathon-lb... \e[0m" && exit 1 )
 while ${TMP_DCOS_TERRAFORM}/dcos marathon task list --json | jq .[].healthCheckResults[].alive | grep -q -v true; do
-  echo -e "\e[34mwaiting for marathon-lb"
+  echo -e "\e[34m waiting for marathon-lb \e[0m"
   sleep 30
 done
 EOF
-  echo -e "\e[32mmarathon-lb alive"
-  echo -e "\e[34mdeploying nginx"
+  echo -e "\e[32m marathon-lb alive \e[0m"
+  echo -e "\e[34m deploying nginx \e[0m"
   "${TMP_DCOS_TERRAFORM}"/dcos marathon app add <<EOF
 {
   "id": "nginx",
@@ -115,20 +115,24 @@ EOF
   }],
   "labels":{
     "HAPROXY_GROUP":"external",
-    "HAPROXY_0_VHOST": "testapp.mesosphere.com"
+    "HAPROXY_0_VHOST": "testapp.mesosphere.com",
+    "HAPROXY_0_REDIRECT_TO_HTTPS": "true"
   }
 }
 EOF
-  echo -e "\e[32mdeployed nginx"
-  timeout 5m bash <<EOF || ( echo -e \e[31mfailed to reach nginx... && exit 1 )
-while $(${TMP_DCOS_TERRAFORM}/dcos marathon app show nginx | jq -e '.tasksHealthy != 1' > /dev/null 2>&1); do
-  echo -e "\e[34mwaiting for nginx"
-  sleep 15
+  echo -e "\e[32m deployed nginx \e[0m"
+  timeout 5m bash <<EOF || ( echo -e "\e[31m failed to reach nginx... \e[0m" && exit 1 )
+while ${TMP_DCOS_TERRAFORM}/dcos marathon app show nginx | jq -e '.tasksHealthy != 1'; do
+  if [ "$?" -ne "0" ]; then
+    echo -e "\e[34m waiting for nginx \e[0m"
+    sleep 15
+  fi
 done
 EOF
-  echo -e "\e[32mhealthy nginx"
-  echo -e "\e[34mcurl testapp.mesosphere.com at http://$(terraform output public-agents-loadbalancer)"
+  echo -e "\e[32m healthy nginx \e[0m"
+  echo -e "\e[34m curl testapp.mesosphere.com at http://$(terraform output public-agents-loadbalancer) \e[0m"
   curl -I \
+    --insecure \
     --silent \
     --connect-timeout 5 \
     --max-time 10 \
@@ -137,9 +141,9 @@ EOF
     --retry-max-time 50 \
     --retry-connrefuse \
     -H "Host: testapp.mesosphere.com" \
-    "http://$(terraform output public-agents-loadbalancer)" \
-      | grep -F "Server: nginx/1.15.5" || echo -e "\e[31mNginx not reached" && exit 1
-  echo -e "\e[32mNginx reached"
+    "https://$(terraform output public-agents-loadbalancer)" \
+      | grep -F "Server: nginx/1.15.5" || echo -e "\e[31m nginx not reached \e[0m" && exit 1
+  echo -e "\e[32m nginx reached \e[0m"
 }
 
 main() {
