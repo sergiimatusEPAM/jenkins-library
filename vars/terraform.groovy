@@ -59,8 +59,8 @@ def call() {
             steps {
               script {
                 env.PROVIDER = sh (returnStdout: true, script: "echo ${env.GIT_URL} | egrep -o 'terraform-\\w+-.*'| cut -d'-' -f2").trim()
-                def m = env.PROVIDER =~ /^(aws|azure|gcp)$/
-                if (!m)  {
+                def m = env.PROVIDER ==~ /^(aws|azure|gcp)$/
+                if (!m) {
                   env.PROVIDER = 'aws'
                 }
                 env.UNIVERSAL_INSTALLER_BASE_VERSION = sh (returnStdout: true, script: "git describe --abbrev=0 --tags | sed -r 's/\\.([0-9]+)\$/.x/'").trim()
