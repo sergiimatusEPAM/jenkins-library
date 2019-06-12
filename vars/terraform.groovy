@@ -58,13 +58,13 @@ def call() {
             agent { label 'dcos-terraform-cicd' }
             steps {
               script {
-                env.PROVIDER = sh (returnStdout: true, script: "echo ${env.GIT_URL} | egrep -o 'terraform-\\w+-.*'| cut -d'-' -f2").trim()
+                env.PROVIDER = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset -o errexit\necho ${env.GIT_URL} | egrep -o 'terraform-\\w+-.*'| cut -d'-' -f2").trim()
                 def m = env.PROVIDER ==~ /^(aws|azure|gcp)$/
                 if (!m) {
                   env.PROVIDER = 'aws'
                 }
-                env.UNIVERSAL_INSTALLER_BASE_VERSION = sh (returnStdout: true, script: "git describe --abbrev=0 --tags | sed -r 's/\\.([0-9]+)\$/.x/'").trim()
-                env.IS_UNIVERSAL_INSTALLER = sh (returnStdout: true, script: "TFENV=\$(echo ${env.GIT_URL} | egrep -o 'terraform-\\w+-.*'); [ -z \$TFENV ] || echo 'YES'").trim()
+                env.UNIVERSAL_INSTALLER_BASE_VERSION = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset -o errexit\ngit describe --abbrev=0 --tags | sed -r 's/\\.([0-9]+)\$/.x/'").trim()
+                env.IS_UNIVERSAL_INSTALLER = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset -o errexit\nTFENV=\$(echo ${env.GIT_URL} | egrep -o 'terraform-\\w+-.*'); [ -z \$TFENV ] || echo 'YES'").trim()
               }
             }
           }
@@ -145,12 +145,10 @@ def call() {
           stage('Integration Test') {
             when {
               beforeAgent true
-              allOf {
-                expression { env.UNIVERSAL_INSTALLER_BASE_VERSION != "null" }
-                expression { env.UNIVERSAL_INSTALLER_BASE_VERSION != "" }
-                environment name: 'IS_UNIVERSAL_INSTALLER', value: 'YES'
-                not { changelog '.*^\\[ci-skip\\].+$' }
-              }
+              expression { env.UNIVERSAL_INSTALLER_BASE_VERSION != "null" }
+              expression { env.UNIVERSAL_INSTALLER_BASE_VERSION != "" }
+              environment name: 'IS_UNIVERSAL_INSTALLER', value: 'YES'
+              not { changelog '.*^\\[ci-skip\\].+$' }
             }
             agent { label 'dcos-terraform-cicd' }
             environment {
@@ -239,15 +237,17 @@ def call() {
               if ! git diff-index --quiet HEAD --; then
                 git ls-files --other --modified --exclude-standard
 
-                git config --local credential.helper 'store --file=\${WORKSPACE}/.git-credentials'
-                git config --local user.name '\${GIT_COMMITTER_NAME}'
-                git config --local user.password '\${GITHUB_API_TOKEN}'
+                git config --local --add credential.helper 'store --file=${WORKSPACE}/.git-credentials'
+                GITDOMAIN=\$(git config --get remote.origin.url | cut -f 3 -d "/")
+                echo "https://${GIT_COMMITTER_NAME}:${GITHUB_API_TOKEN}@\${GITDOMAIN}" >> ${WORKSPACE}/.git-credentials
+                git config --local user.name '${GIT_COMMITTER_NAME}'
+                git config --local user.email '${GIT_COMMITTER_EMAIL}'
 
-                GIT_AUTHOR_NAME=\$(git log -1 --format='%an' \${GIT_COMMIT_ID})
-                GIT_AUTHOR_EMAIL=\$(git log -1 --format='%ae' \${GIT_COMMIT_ID})
+                GIT_COMMIT_HASH=\$(git --no-pager log -1 --pretty=format:'%H')
+                AUTHOR=\$(git --no-pager log -1 --format='%an <%ae>' \${GIT_COMMIT_HASH})
 
-                git commit -m "CI - [ci-skip] - updated files"
-                git push origin HEAD:\${BRANCH_NAME}
+                git commit --author="'\${AUTHOR}'" -m "CI - [ci-skip] - updated files"
+                git push origin HEAD:${BRANCH_NAME}
               fi
             """
           }
@@ -261,7 +261,7 @@ def call() {
                 set +o errexit
 
                 git config --local --remove-section credential
-                rm -f \${WORKSPACE}/.git-credentials
+                rm -f ${WORKSPACE}/.git-credentials
               """
             }
           }
