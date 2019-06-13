@@ -188,7 +188,7 @@ main() {
     fi
 
     if [ -z "${TMP_DCOS_TERRAFORM}" ] || [ ! -d "${TMP_DCOS_TERRAFORM}" ] ; then
-      TMP_DCOS_TERRAFORM=$(mktemp -d --tmpdir=${WORKSPACE});
+      TMP_DCOS_TERRAFORM=$(mktemp -d -p ${WORKSPACE});
       echo "TMP_DCOS_TERRAFORM=${TMP_DCOS_TERRAFORM}" > ci-deploy.state
       CI_DEPLOY_STATE=$PWD/ci-deploy.state;
       echo "CI_DEPLOY_STATE=$PWD/ci-deploy.state" >> ci-deploy.state

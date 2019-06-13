@@ -14,7 +14,6 @@ def call() {
         parallel {
           stage('Terraform validate') {
             when {
-              beforeAgent true
               not { changelog '.*^\\[ci-skip\\].+$' }
             }
             agent { label 'terraform' }
@@ -33,7 +32,6 @@ def call() {
           }
           stage('Download tfdescan tsv') {
             when {
-              beforeAgent true
               not { changelog '.*^\\[ci-skip\\].+$' }
             }
             agent { label 'tfdescsan' }
@@ -52,7 +50,6 @@ def call() {
           }
           stage("Build environment vars") {
             when {
-              beforeAgent true
               not { changelog '.*^\\[ci-skip\\].+$' }
             }
             agent { label 'dcos-terraform-cicd' }
@@ -72,7 +69,6 @@ def call() {
       }
       stage('Terraform FMT') {
         when {
-          beforeAgent true
           not { changelog '.*^\\[ci-skip\\].+$' }
         }
         agent { label 'terraform' }
@@ -94,14 +90,13 @@ def call() {
       }
       stage('Sanitize descriptions') {
         when {
-          beforeAgent true
           not { changelog '.*^\\[ci-skip\\].+$' }
         }
         agent { label 'tfdescsan' }
         steps {
           unstash 'fmt'
+          unstash 'tfdescsan.tsv'
           ansiColor('xterm') {
-            unstash 'tfdescsan.tsv'
             sh """
               #!/usr/bin/env sh
               set +o xtrace
@@ -124,7 +119,6 @@ def call() {
         parallel {
           stage('README.md') {
             when {
-              beforeAgent true
               not { changelog '.*^\\[ci-skip\\].+$' }
             }
             agent { label 'terraform' }
@@ -144,7 +138,6 @@ def call() {
           }
           stage('Integration Test') {
             when {
-              beforeAgent true
               expression { env.UNIVERSAL_INSTALLER_BASE_VERSION != "null" }
               expression { env.UNIVERSAL_INSTALLER_BASE_VERSION != "" }
               environment name: 'IS_UNIVERSAL_INSTALLER', value: 'YES'
@@ -215,7 +208,6 @@ def call() {
       }
       stage('Pushing') {
         when {
-          beforeAgent true
           not { changeRequest() }
           not { changelog '.*^\\[ci-skip\\].+$' }
         }
