@@ -77,7 +77,7 @@ deploy_test_app() {
     -o /dev/null \
     "https://$(terraform output cluster-address)"
   echo -e "\e[32m reached the cluster \e[0m"
-  timeout 2m bash <<EOF || ( echo -e "\e[31m failed dcos cluster setup / login... \e[0m" && exit 1 )
+  timeout -t 120 bash <<EOF || ( echo -e "\e[31m failed dcos cluster setup / login... \e[0m" && exit 1 )
 while true; do
   ${TMP_DCOS_TERRAFORM}/dcos cluster setup "https://$(terraform output cluster-address)" --no-check --insecure --provider=dcos-users --username=bootstrapuser --password=deleteme
   if [ $? -eq 0 ]; then
@@ -107,7 +107,7 @@ EOF
 }
 EOF
   "${TMP_DCOS_TERRAFORM}"/dcos package install --yes --options=marathon-lb-options.json marathon-lb > /dev/null 2>&1 || exit 1
-  timeout 2m bash <<EOF || ( echo -e "\e[31m failed to deploy marathon-lb... \e[0m" && exit 1 )
+  timeout -t 120 bash <<EOF || ( echo -e "\e[31m failed to deploy marathon-lb... \e[0m" && exit 1 )
 while ${TMP_DCOS_TERRAFORM}/dcos marathon task list --json | jq .[].healthCheckResults[].alive | grep -q -v true; do
   echo -e "\e[34m waiting for marathon-lb \e[0m"
   sleep 10
@@ -152,7 +152,7 @@ EOF
 }
 EOF
   echo -e "\e[32m deployed nginx \e[0m"
-  timeout 2m bash <<EOF || ( echo -e "\e[31m failed to reach nginx... \e[0m" && exit 1 )
+  timeout -t 120 bash <<EOF || ( echo -e "\e[31m failed to reach nginx... \e[0m" && exit 1 )
 while ${TMP_DCOS_TERRAFORM}/dcos marathon app show nginx | jq -e '.tasksHealthy != 1' > /dev/null 2>&1; do
   if [ "$?" -ne "0" ]; then
     echo -e "\e[34m waiting for nginx \e[0m"
