@@ -11,10 +11,30 @@ def call() {
     }
     stages {
       stage('Checkout') {
-        agent 'master'
-        steps {
-          ansiColor('xterm') {
-            checkout scm
+        parallel {
+          stage('terraform') {
+            agent { label 'terraform' }
+            steps {
+              ansiColor('xterm') {
+                checkout scm
+              }
+            }
+          }
+          stage('tfdescsan') {
+            agent { label 'tfdescsan' }
+            steps {
+              ansiColor('xterm') {
+                checkout scm
+              }
+            }
+          }
+          stage('dcos-terraform-cicd') {
+            agent { label 'dcos-terraform-cicd' }
+            steps {
+              ansiColor('xterm') {
+                checkout scm
+              }
+            }
           }
         }
       }
