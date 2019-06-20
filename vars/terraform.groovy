@@ -10,29 +10,21 @@ def call() {
       disableConcurrentBuilds()
     }
     stages {
-      stage('Checkout') {
-        parallel {
-          stage('terraform') {
-            agent { label 'terraform' }
-            steps {
-              ansiColor('xterm') {
-                checkout scm
-              }
-            }
-          }
-          stage('tfdescsan') {
-            agent { label 'tfdescsan' }
-            steps {
-              ansiColor('xterm') {
-                checkout scm
-              }
-            }
-          }
-          stage('dcos-terraform-cicd') {
-            agent { label 'dcos-terraform-cicd' }
-            steps {
-              ansiColor('xterm') {
-                checkout scm
+      stage('Changelog') {
+        agent { label 'terraform' }
+        steps {
+          script {
+            def changeLogSets = currentBuild.changeSets
+            for (int i = 0; i < changeLogSets.size(); i++) {
+              def entries = changeLogSets[i].items
+              for (int j = 0; j < entries.length; j++) {
+                def entry = entries[j]
+                echo "${entry.commitId} by ${entry.author} on ${new Date(entry.timestamp)}: ${entry.msg}"
+                def files = new ArrayList(entry.affectedFiles)
+                for (int k = 0; k < files.size(); k++) {
+                  def file = files[k]
+                  echo "  ${file.editType.name} ${file.path}"
+                }
               }
             }
           }
@@ -87,7 +79,7 @@ def call() {
             steps {
               script {
                 env.PROVIDER = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset -o errexit\necho ${env.GIT_URL} | egrep -o 'terraform-\\w+-.*'| cut -d'-' -f2").trim()
-                def m = env.PROVIDER ==~ /^(aws|azure|gcp)$/
+                def m = env.PROVIDER ==~ /^(aws|azurerm|gcp)$/
                 if (!m) {
                   env.PROVIDER = 'aws'
                 }

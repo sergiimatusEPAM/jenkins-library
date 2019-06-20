@@ -11,7 +11,7 @@ module "dcos" {
   source  = "dcos-terraform/azurerm/dcos"
   version = "~> 0.2.0"
 
-  dcos_instance_os    = "coreos_1855.5.0"
+  dcos_instance_os    = "${var.dcos_instance_os}"
   cluster_name        = "${random_id.cluster_name.hex}"
   ssh_public_key_file = "./ssh-key.pub"
   admin_ips           = ["${data.http.whatismyip.body}/32"]
@@ -28,6 +28,10 @@ module "dcos" {
 
   dcos_variant              = "${var.dcos_variant}"
   dcos_license_key_contents = "${var.dcos_license_key_contents}"
+}
+
+variable "dcos_instance_os" {
+  default = "centos_7.6"
 }
 
 variable "dcos_variant" {
