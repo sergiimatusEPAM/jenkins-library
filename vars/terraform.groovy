@@ -11,7 +11,11 @@ def call() {
     }
     stages {
       stage('Checkout') {
-        checkout scm
+        steps {
+          ansiColor('xterm') {
+            checkout scm
+          }
+        }
       }
       stage('Preparing') {
         parallel {
