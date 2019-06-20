@@ -11,7 +11,7 @@ build_task() {
   fi
   ssh-add "${PWD}"/ssh-key
   terraform version
-  terraform init
+  terraform init -upgrade
   # Deploy
   export TF_VAR_dcos_version="${DCOS_VERSION}"
   terraform apply -auto-approve

@@ -78,13 +78,14 @@ def call() {
             agent { label 'dcos-terraform-cicd' }
             steps {
               script {
-                env.PROVIDER = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset -o errexit\necho ${env.GIT_URL} | egrep -o 'terraform-\\w+-.*'| cut -d'-' -f2").trim()
+                env.PROVIDER = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset -o errexit\necho ${env.GIT_URL} | awk -F '-' '/terraform/ {print \$3}'").trim()
                 def m = env.PROVIDER ==~ /^(aws|azurerm|gcp)$/
                 if (!m) {
                   env.PROVIDER = 'aws'
                 }
+                echo -e "\\e[34m Set provider: ${env.PROVIDER} \\e[0m"
                 env.UNIVERSAL_INSTALLER_BASE_VERSION = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset -o errexit\ngit describe --abbrev=0 --tags | sed -r 's/\\.([0-9]+)\$/.x/'").trim()
-                env.IS_UNIVERSAL_INSTALLER = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset -o errexit\nTFENV=\$(echo ${env.GIT_URL} | egrep -o 'terraform-\\w+-.*'); [ -z \$TFENV ] || echo 'YES'").trim()
+                env.IS_UNIVERSAL_INSTALLER = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset -o errexit\nTFENV=\$(echo ${env.GIT_URL} | awk -F '-' '/terraform/ {print \$2}'); [ -z \$TFENV ] || echo 'YES'").trim()
               }
             }
           }
