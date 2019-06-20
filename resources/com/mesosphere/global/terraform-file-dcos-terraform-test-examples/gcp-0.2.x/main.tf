@@ -1,8 +1,5 @@
 # Configure the Google Cloud provider
-provider "google" {
-  project = ""
-  region  = "us-west1"
-}
+provider "google" {}
 
 data "http" "whatismyip" {
   url = "http://whatismyip.akamai.com/"
@@ -41,7 +38,7 @@ module "dcos" {
 }
 
 variable "dcos_instance_os" {
-  default = "centos_7.5"
+  default = "centos_7"
 }
 
 variable "dcos_variant" {

@@ -10,10 +10,14 @@ def call() {
       disableConcurrentBuilds()
     }
     stages {
+      stage('Checkout') {
+        checkout scm
+      }
       stage('Preparing') {
         parallel {
           stage('Terraform validate') {
             when {
+              beforeAgent true
               not { changelog '.*^\\[ci-skip\\].+$' }
             }
             agent { label 'terraform' }
@@ -32,6 +36,7 @@ def call() {
           }
           stage('Download tfdescan tsv') {
             when {
+              beforeAgent true
               not { changelog '.*^\\[ci-skip\\].+$' }
             }
             agent { label 'tfdescsan' }
@@ -50,6 +55,7 @@ def call() {
           }
           stage("Build environment vars") {
             when {
+              beforeAgent true
               not { changelog '.*^\\[ci-skip\\].+$' }
             }
             agent { label 'dcos-terraform-cicd' }
@@ -69,6 +75,7 @@ def call() {
       }
       stage('Terraform FMT') {
         when {
+          beforeAgent true
           not { changelog '.*^\\[ci-skip\\].+$' }
         }
         agent { label 'terraform' }
@@ -119,6 +126,7 @@ def call() {
         parallel {
           stage('README.md') {
             when {
+              beforeAgent true
               not { changelog '.*^\\[ci-skip\\].+$' }
             }
             agent { label 'terraform' }
@@ -138,6 +146,7 @@ def call() {
           }
           stage('Integration Test') {
             when {
+              beforeAgent true
               expression { env.UNIVERSAL_INSTALLER_BASE_VERSION != "null" }
               expression { env.UNIVERSAL_INSTALLER_BASE_VERSION != "" }
               environment name: 'IS_UNIVERSAL_INSTALLER', value: 'YES'
@@ -148,6 +157,8 @@ def call() {
               DCOS_VERSION = '1.13.1'
               // DCOS_VERSION_UPGRADE = '1.13.1'
               GOOGLE_APPLICATION_CREDENTIALS = credentials('dcos-terraform-ci-gcp')
+              GOOGLE_PROJECT = 'massive-bliss-781'
+              GOOGLE_REGION = 'us-west1'
               TF_VAR_dcos_license_key_contents = credentials('dcos-license')
             }
             steps {
@@ -208,6 +219,7 @@ def call() {
       }
       stage('Pushing') {
         when {
+          beforeAgent true
           not { changeRequest() }
           not { changelog '.*^\\[ci-skip\\].+$' }
         }

@@ -1,8 +1,5 @@
 # Configure the Google Cloud provider
-provider "google" {
-  project = ""
-  region  = "us-west1"
-}
+provider "google" {}
 
 data "http" "whatismyip" {
   url = "http://whatismyip.akamai.com/"
