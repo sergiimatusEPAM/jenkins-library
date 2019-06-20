@@ -92,7 +92,7 @@ def call() {
                   set +o xtrace
                   set -o errexit
 
-                  echo -e "\\e[34m Set provider: ${env.PROVIDER} \\e[0m"
+                  echo -e "\\e[34m Detected and set provider: ${env.PROVIDER} \\e[0m"
                 """
               }
             }
