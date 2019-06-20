@@ -11,6 +11,7 @@ def call() {
     }
     stages {
       stage('Checkout') {
+        agent 'master'
         steps {
           ansiColor('xterm') {
             checkout scm
@@ -53,8 +54,8 @@ def call() {
 
                   wget -O tfdescsan.tsv https://dcos-terraform-mappings.mesosphere.com/
                 """
-                stash includes: 'tfdescsan.tsv', name: 'tfdescsan.tsv'
               }
+              stash includes: 'tfdescsan.tsv', name: 'tfdescsan.tsv'
             }
           }
           stage("Build environment vars") {
