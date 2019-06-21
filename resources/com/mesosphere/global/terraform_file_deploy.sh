@@ -35,7 +35,7 @@ build_task() {
 
 generate_terraform_file() {
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
-  PROVIDER=$(echo "${1}" | grep -E -o 'terraform-\w+-.*' | cut -d'.' -f 1 | cut -d'-' -f2)
+  PROVIDER=$(echo "${1}" | awk -F '-' '/terraform/ {print $3}')
   TF_MODULE_NAME=$(echo "${1}" | grep -E -o 'terraform-\w+-.*' | cut -d'.' -f 1 | cut -d'-' -f3-)
   # we overwrite here the source with the real content of the WORKSPACE as we can rebuild builds in that case
   cat <<EOF | tee Terraformfile
@@ -182,9 +182,14 @@ EOF
 
 main() {
   if [ $# -eq 3 ]; then
-    # ENV variables
     if [ -f "ci-deploy.state"  ]; then
       eval "$(cat ci-deploy.state)"
+    fi
+
+    if [ -z "${WORKSPACE}" ]; then
+      echo "Updating ENV for non-Jenkins env";
+      WORKSPACE=$PWD;
+      GIT_URL=$(git -C "${WORKSPACE}" remote -v | grep origin | tail -1 | awk '{print "${2}"}');
     fi
 
     if [ -z "${TMP_DCOS_TERRAFORM}" ] || [ ! -d "${TMP_DCOS_TERRAFORM}" ] ; then
@@ -199,13 +204,6 @@ main() {
       echo "${DCOS_CONFIG}"
       cp -fr ${WORKSPACE}/"${2}"-"${3}"/. "${TMP_DCOS_TERRAFORM}" || exit 1
     fi
-
-    if [ -z "${WORKSPACE}" ]; then
-      echo "Updating ENV for non-Jenkins env";
-      WORKSPACE=$PWD;
-      GIT_URL=$(git -C "${WORKSPACE}" remote -v | grep origin | tail -1 | awk '{print "${2}"}');
-    fi
-    # End of ENV variables
   fi
 
   case "${1}" in

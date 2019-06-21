@@ -1,3 +1,7 @@
+provider "azurerm" {
+  version = "~> 1.x"
+}
+
 data "http" "whatismyip" {
   url = "http://whatismyip.akamai.com/"
 }
@@ -23,6 +27,10 @@ module "dcos" {
 
   dcos_oauth_enabled = "false"
   dcos_security      = "strict"
+
+  providers = {
+    azurerm = "azurerm"
+  }
 
   dcos_version = "${var.dcos_version}"
 
