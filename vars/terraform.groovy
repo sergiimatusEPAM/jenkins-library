@@ -93,6 +93,8 @@ def call() {
                   set -o errexit
 
                   echo -e "\\e[34m Detected and set provider: ${env.PROVIDER} \\e[0m"
+                  echo -e "\\e[34m Detected universal install base version: ${env.UNIVERSAL_INSTALLER_BASE_VERSION} \\e[0m"
+                  echo -e "\\e[34m Detected universal installer related build: ${env.IS_UNIVERSAL_INSTALLER} \\e[0m"
                 """
               }
             }
