@@ -1,6 +1,4 @@
-provider "azurerm" {
-  version = "~> 1.x"
-}
+provider "azurerm" {}
 
 data "http" "whatismyip" {
   url = "http://whatismyip.akamai.com/"
@@ -12,7 +10,7 @@ resource "random_id" "cluster_name" {
 }
 
 module "dcos" {
-  source  = "dcos-terraform/azurerm/dcos"
+  source  = "dcos-terraform/dcos/azurerm"
   version = "~> 0.1.0"
 
   dcos_instance_os    = "${var.dcos_instance_os}"

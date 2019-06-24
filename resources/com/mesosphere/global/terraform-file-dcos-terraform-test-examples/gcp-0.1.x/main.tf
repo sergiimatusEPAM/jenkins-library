@@ -1,4 +1,3 @@
-# Configure the Google Cloud provider
 provider "google" {}
 
 data "http" "whatismyip" {
