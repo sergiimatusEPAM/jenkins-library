@@ -5,6 +5,7 @@ def call() {
     environment {
       GIT_COMMITTER_NAME = 'dcos-terraform-ci'
       GIT_COMMITTER_EMAIL = 'sre@mesosphere.io'
+      TF_IN_AUTOMATION = '1'
     }
     options {
       disableConcurrentBuilds()
@@ -182,7 +183,7 @@ def call() {
             }
             agent { label 'dcos-terraform-cicd' }
             environment {
-              DCOS_VERSION = '1.13.1'
+              DCOS_VERSION = '1.13.2'
               // DCOS_VERSION_UPGRADE = '1.13.1'
               GOOGLE_APPLICATION_CREDENTIALS = credentials('dcos-terraform-ci-gcp')
               GOOGLE_PROJECT = 'massive-bliss-781'
