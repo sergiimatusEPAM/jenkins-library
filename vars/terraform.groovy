@@ -3,7 +3,7 @@ def call() {
   pipeline {
     agent none
     environment {
-      GIT_COMMITTER_NAME = 'dcos-terraform-ci'
+      GIT_COMMITTER_NAME = 'dcos-sre-robot'
       GIT_COMMITTER_EMAIL = 'sre@mesosphere.io'
       TF_IN_AUTOMATION = '1'
     }
