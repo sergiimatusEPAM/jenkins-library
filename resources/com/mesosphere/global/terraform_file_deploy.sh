@@ -115,9 +115,31 @@ done
 EOF
   echo -e "\e[32m marathon-lb alive \e[0m"
   echo -e "\e[34m deploying nginx \e[0m"
+  cat <<EOF > nginx-default.conf
+server {
+  listen       80;
+  server_name  _;
+
+  location / {
+    root   /usr/share/nginx/html;
+    index  index.html index.htm;
+    add_header X-Testheader I-am-reachable;
+  }
+
+  error_page   500 502 503 504  /50x.html;
+  location = /50x.html {
+    root   /usr/share/nginx/html;
+  }
+}
+EOF
+  BASE64_CONFIG=$(cat nginx-default.conf | base64 | sed ':a;N;$!ba;s/\n//g')
   "${TMP_DCOS_TERRAFORM}"/dcos marathon app add <<EOF
 {
   "id": "nginx",
+  "cmd": "echo -n \${DEFAULT_CONF} | base64 -d > /etc/nginx/conf.d/default.conf; nginx -g 'daemon off;'",
+  "env": {
+    "DEFAULT_CONF": "${BASE64_CONFIG}"
+  },
   "networks": [
     { "mode": "container/bridge" }
   ],
@@ -125,7 +147,7 @@ EOF
     "type": "DOCKER",
     "docker": {
       "image": "nginx:1.16.0-alpine",
-      "forcePullImage":true
+      "forcePullImage": true
     },
     "portMappings": [
       { "hostPort": 0, "containerPort": 80 }
@@ -146,7 +168,7 @@ EOF
     "ipProtocol": "IPv4"
   }],
   "labels":{
-    "HAPROXY_GROUP":"external",
+    "HAPROXY_GROUP": "external",
     "HAPROXY_0_VHOST": "testapp.mesosphere.com"
   }
 }
@@ -162,6 +184,7 @@ done
 EOF
   echo -e "\e[32m healthy nginx \e[0m"
   echo -e "\e[34m curl testapp.mesosphere.com at http://$(terraform output public-agents-loadbalancer) \e[0m"
+  set -o xtrace
   curl -I \
     --silent \
     --connect-timeout 5 \
@@ -171,11 +194,12 @@ EOF
     --retry-max-time 50 \
     --retry-connrefuse \
     -H "Host: testapp.mesosphere.com" \
-    "http://$(terraform output public-agents-loadbalancer)" | grep -q -F "Server: nginx/1.16.0"
+    "http://$(terraform output public-agents-loadbalancer)" | grep -q -F "x-testheader: I-am-reachable"
+  set +o xtrace
   if [ $? -ne 0 ]; then
-    echo -e "\e[31m nginx not reached \e[0m" && exit 1
+    echo -e "\e[31m curl with Host header testapp.mesosphere.com failed \e[0m" && exit 1
   else
-    echo -e "\e[32m nginx reached \e[0m"
+    echo -e "\e[32m curl with Host header testapp.mesosphere.com successful \e[0m"
   fi
   echo -e "\e[32m Finished app deploy test! \e[0m"
 }
