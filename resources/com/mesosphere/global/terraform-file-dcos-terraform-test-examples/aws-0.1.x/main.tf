@@ -49,7 +49,7 @@ variable "dcos_instance_os" {
 }
 
 variable "bootstrap_instance_type" {
-  default = "m5.xlarge"
+  default = "m5a.xlarge"
 }
 
 variable "masters_instance_type" {

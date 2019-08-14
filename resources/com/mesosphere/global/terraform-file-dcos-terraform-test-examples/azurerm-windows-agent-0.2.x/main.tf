@@ -1,6 +1,4 @@
-provider "aws" {
-  region = "us-east-1"
-}
+provider "azure" {}
 
 data "http" "whatismyip" {
   url = "http://whatismyip.akamai.com/"
@@ -12,53 +10,58 @@ resource "random_id" "cluster_name" {
 }
 
 module "dcos" {
-  source  = "dcos-terraform/dcos/aws"
+  source  = "dcos-terraform/dcos/azurerm"
   version = "~> 0.2.0"
 
+  dcos_instance_os    = "${var.dcos_instance_os}"
   cluster_name        = "${random_id.cluster_name.hex}"
   ssh_public_key_file = "./ssh-key.pub"
   admin_ips           = ["${data.http.whatismyip.body}/32"]
+  location            = "West US"
 
   num_masters        = "${var.num_masters}"
   num_private_agents = "${var.num_private_agents}"
   num_public_agents  = "${var.num_public_agents}"
 
-  dcos_version = "${var.dcos_version}"
+  ansible_bundled_container = "mesosphere/dcos-ansible-bundle:feature-windows-support-039d79d"
+
+  additional_windows_private_agent_ips       = ["${concat(module.winagent.private_ips)}"]
+  additional_windows_private_agent_passwords = ["${concat(module.winagent.windows_passwords)}"]
 
   dcos_oauth_enabled = "false"
   dcos_security      = "strict"
 
-  dcos_instance_os             = "${var.dcos_instance_os}"
-  bootstrap_instance_type      = "${var.bootstrap_instance_type}"
-  masters_instance_type        = "${var.masters_instance_type}"
-  private_agents_instance_type = "${var.private_agents_instance_type}"
-  public_agents_instance_type  = "${var.public_agents_instance_type}"
-
   providers = {
-    aws = "aws"
+    azure = "azure"
   }
+
+  dcos_version = "${var.dcos_version}"
 
   dcos_variant              = "${var.dcos_variant}"
   dcos_license_key_contents = "${var.dcos_license_key_contents}"
+}
+
+module "winagent" {
+  source = "dcos-terraform/windows-instance/azurerm"
+
+  providers = {
+    azure = "azure"
+  }
+
+  location            = "West US"
+  dcos_instance_os    = "windows_1809"
+  cluster_name        = "${random_id.cluster_name.hex}"
+  hostname_format     = "winagt-%[1]d-%[2]s"
+  subnet_id           = "${module.dcos.infrastructure.subnet_id}"
+  resource_group_name = "${module.dcos.infrastructure.resource_group_name}"
+  vm_size             = "Standard_D2s_v3"
+  admin_username      = "${module.dcos.infrastructure.private_agents.admin_username}"
+  public_ssh_key      = "./ssh-key.pub"
+  num                 = 1
+}
 
 variable "dcos_instance_os" {
   default = "centos_7.6"
-}
-
-variable "bootstrap_instance_type" {
-  default = "m5a.xlarge"
-}
-
-variable "masters_instance_type" {
-  default = "t2.large"
-}
-
-variable "private_agents_instance_type" {
-  default = "t2.large"
-}
-
-variable "public_agents_instance_type" {
-  default = "t2.large"
 }
 
 variable "dcos_variant" {

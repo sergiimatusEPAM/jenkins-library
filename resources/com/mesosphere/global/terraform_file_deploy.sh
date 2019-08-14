@@ -15,9 +15,14 @@ build_task() {
   # Deploy
   export TF_VAR_dcos_version="${DCOS_VERSION}"
   terraform apply -auto-approve
-  # deploying mlb and nginx test
   set +o errexit
-  deploy_test_app
+  bash ./setup_dcoscli.sh
+  bash ./install_marathon-lb.sh
+  bash ./agent-app-test.sh
+  if ${WINDOWS}; then
+    bash ./windows-agent-app-test.sh
+  fi
+  echo -e "\e[32m Finished app deploy test! \e[0m"
   set -o errexit
   # Expand
   export TF_VAR_num_public_agents="${EXPAND_NUM_PUBLIC_AGENTS:-2}"
@@ -53,157 +58,6 @@ post_build_task() {
   rm -fr "${CI_DEPLOY_STATE}" "${TMP_DCOS_TERRAFORM}"
 }
 
-deploy_test_app() {
-  case "$(uname -s).$(uname -m)" in
-    Linux.x86_64) system=linux/x86-64;;
-    Darwin.x86_64) system=darwin/x86-64;;
-    *) echo -e "\e[31m sorry, there is no binary distribution of dcos-cli for your platform \e[0m";;
-  esac
-  if [ ! -f "${TMP_DCOS_TERRAFORM}/dcos" ]; then
-    curl --silent -o "${TMP_DCOS_TERRAFORM}/dcos" https://downloads.dcos.io/binaries/cli/$system/latest/dcos
-    chmod +x "${TMP_DCOS_TERRAFORM}/dcos"
-  fi
-  echo -e "\e[34m waiting for the cluster \e[0m"
-  curl --insecure \
-    --location \
-    --silent \
-    --connect-timeout 5 \
-    --max-time 10 \
-    --retry 30 \
-    --retry-delay 0 \
-    --retry-max-time 310 \
-    --retry-connrefuse \
-    -w "Type: %{content_type}\nCode: %{response_code}\n" \
-    -o /dev/null \
-    "https://$(terraform output cluster-address)"
-  echo -e "\e[32m reached the cluster \e[0m"
-  timeout -t 120 bash <<EOF || ( echo -e "\e[31m failed dcos cluster setup / login... \e[0m" && exit 1 )
-while true; do
-  ${TMP_DCOS_TERRAFORM}/dcos cluster setup "https://$(terraform output cluster-address)" --no-check --insecure --provider=dcos-users --username=bootstrapuser --password=deleteme
-  if [ $? -eq 0 ]; then
-    break
-  fi
-  echo -e "\e[34m waiting for dcos cluster setup / login to be done \e[0m"
-  sleep 10
-done
-EOF
-  "${TMP_DCOS_TERRAFORM}"/dcos package install dcos-enterprise-cli --yes || exit 1
-  "${TMP_DCOS_TERRAFORM}"/dcos security org service-accounts show marathon-lb-sa --json > /dev/null 2>&1
-  if [ $? -ne 0 ];then
-    "${TMP_DCOS_TERRAFORM}"/dcos security org service-accounts keypair mlb-private-key.pem mlb-public-key.pem > /dev/null 2>&1 || exit 1
-    "${TMP_DCOS_TERRAFORM}"/dcos security org service-accounts create -p mlb-public-key.pem -d "Marathon-LB service account" marathon-lb-sa > /dev/null 2>&1 || exit 1
-    "${TMP_DCOS_TERRAFORM}"/dcos security org service-accounts show marathon-lb-sa --json > /dev/null 2>&1 || exit 1
-    "${TMP_DCOS_TERRAFORM}"/dcos security secrets create-sa-secret --strict mlb-private-key.pem marathon-lb-sa marathon-lb/service-account-secret > /dev/null 2>&1 || exit 1
-    rm -rf mlb-private-key.pem
-    "${TMP_DCOS_TERRAFORM}"/dcos security org users grant marathon-lb-sa dcos:service:marathon:marathon:services:/ read > /dev/null 2>&1 || exit 1
-    "${TMP_DCOS_TERRAFORM}"/dcos security org users grant marathon-lb-sa dcos:service:marathon:marathon:admin:events read --description "Allows access to Marathon events" > /dev/null 2>&1 || exit 1
-  fi
-  cat <<EOF > marathon-lb-options.json
-{
-    "marathon-lb": {
-        "secret_name": "marathon-lb/service-account-secret",
-        "marathon-uri": "https://marathon.mesos:8443"
-    }
-}
-EOF
-  "${TMP_DCOS_TERRAFORM}"/dcos package install --yes --options=marathon-lb-options.json marathon-lb > /dev/null 2>&1 || exit 1
-  timeout -t 120 bash <<EOF || ( echo -e "\e[31m failed to deploy marathon-lb... \e[0m" && exit 1 )
-while ${TMP_DCOS_TERRAFORM}/dcos marathon task list --json | jq .[].healthCheckResults[].alive | grep -q -v true; do
-  echo -e "\e[34m waiting for marathon-lb \e[0m"
-  sleep 10
-done
-EOF
-  echo -e "\e[32m marathon-lb alive \e[0m"
-  echo -e "\e[34m deploying nginx \e[0m"
-  cat <<EOF > nginx-default.conf
-server {
-  listen       80;
-  server_name  _;
-
-  location / {
-    root   /usr/share/nginx/html;
-    index  index.html index.htm;
-    add_header X-Testheader I-am-reachable;
-  }
-
-  error_page   500 502 503 504  /50x.html;
-  location = /50x.html {
-    root   /usr/share/nginx/html;
-  }
-}
-EOF
-  BASE64_CONFIG=$(cat nginx-default.conf | base64 | sed ':a;N;$!ba;s/\n//g')
-  "${TMP_DCOS_TERRAFORM}"/dcos marathon app add <<EOF
-{
-  "id": "nginx",
-  "cmd": "echo -n \${DEFAULT_CONF} | base64 -d > /etc/nginx/conf.d/default.conf; nginx -g 'daemon off;'",
-  "env": {
-    "DEFAULT_CONF": "${BASE64_CONFIG}"
-  },
-  "networks": [
-    { "mode": "container/bridge" }
-  ],
-  "container": {
-    "type": "DOCKER",
-    "docker": {
-      "image": "nginx:1.16.0-alpine",
-      "forcePullImage": true
-    },
-    "portMappings": [
-      { "hostPort": 0, "containerPort": 80 }
-    ]
-  },
-  "instances": 1,
-  "cpus": 0.1,
-  "mem": 65,
-  "healthChecks": [{
-    "gracePeriodSeconds": 10,
-    "intervalSeconds": 2,
-    "maxConsecutiveFailures": 1,
-    "portIndex": 0,
-    "timeoutSeconds": 10,
-    "delaySeconds": 15,
-    "protocol": "MESOS_HTTP",
-    "path": "/",
-    "ipProtocol": "IPv4"
-  }],
-  "labels":{
-    "HAPROXY_GROUP": "external",
-    "HAPROXY_0_VHOST": "testapp.mesosphere.com"
-  }
-}
-EOF
-  echo -e "\e[32m deployed nginx \e[0m"
-  timeout -t 120 bash <<EOF || ( echo -e "\e[31m failed to reach nginx... \e[0m" && exit 1 )
-while ${TMP_DCOS_TERRAFORM}/dcos marathon app show nginx | jq -e '.tasksHealthy != 1' > /dev/null 2>&1; do
-  if [ "$?" -ne "0" ]; then
-    echo -e "\e[34m waiting for nginx \e[0m"
-    sleep 10
-  fi
-done
-EOF
-  echo -e "\e[32m healthy nginx \e[0m"
-  echo -e "\e[34m curl testapp.mesosphere.com at http://$(terraform output public-agents-loadbalancer) \e[0m"
-  set -o xtrace
-  curl -I \
-    --silent \
-    --connect-timeout 5 \
-    --max-time 10 \
-    --retry 5 \
-    --retry-delay 0 \
-    --retry-max-time 50 \
-    --retry-connrefuse \
-    -H "Host: testapp.mesosphere.com" \
-    "http://$(terraform output public-agents-loadbalancer)" | grep -q -F "x-testheader: I-am-reachable"
-  set +o xtrace
-  if [ $? -ne 0 ]; then
-    echo -e "\e[31m curl with Host header testapp.mesosphere.com failed \e[0m" && exit 1
-  else
-    echo -e "\e[32m curl with Host header testapp.mesosphere.com successful \e[0m"
-  fi
-  echo -e "\e[32m Finished app deploy test! \e[0m"
-}
-
 main() {
   if [ $# -eq 3 ]; then
     if [ -f "ci-deploy.state"  ]; then
@@ -228,6 +82,12 @@ main() {
       echo "${DCOS_CONFIG}"
       cp -fr ${WORKSPACE}/"${2}"-"${3}"/. "${TMP_DCOS_TERRAFORM}" || exit 1
     fi
+  fi
+
+  WINDOWS_ARG="--windows"
+  WINDOWS=false
+  if [ -n "$4" -a "$4" = "$WINDOWS_ARG" ]; then
+    WINDOWS=true
   fi
 
   case "${1}" in

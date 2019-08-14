@@ -23,6 +23,8 @@ module "dcos" {
   num_private_agents = "${var.num_private_agents}"
   num_public_agents  = "${var.num_public_agents}"
 
+  ansible_bundled_container = "mesosphere/dcos-ansible-bundle:feature-windows-support-039d79d"
+
   dcos_version = "${var.dcos_version}"
 
   dcos_oauth_enabled = "false"
@@ -40,6 +42,27 @@ module "dcos" {
 
   dcos_variant              = "${var.dcos_variant}"
   dcos_license_key_contents = "${var.dcos_license_key_contents}"
+
+  additional_windows_private_agent_ips       = ["${concat(module.winagent.private_ips)}"]
+  additional_windows_private_agent_passwords = ["${concat(module.winagent.windows_passwords)}"]
+}
+
+module "winagent" {
+  source  = "dcos-terraform/windows-instance/aws"
+  version = "0.0.1"
+
+  providers = {
+    aws = "aws"
+  }
+
+  cluster_name           = "${random_id.cluster_name.hex}"
+  hostname_format        = "%[3]s-winagent%[1]d-%[2]s"
+  aws_subnet_ids         = ["${module.dcos.infrastructure.vpc.subnet_ids}"]
+  aws_security_group_ids = ["${module.dcos.infrastructure.security_groups.admin}"]
+  aws_key_name           = "${module.dcos.infrastructure.aws_key_name}"
+  aws_instance_type      = "m5a.xlarge"
+  num                    = 1
+}
 
 variable "dcos_instance_os" {
   default = "centos_7.6"
@@ -96,4 +119,8 @@ output "cluster-address" {
 
 output "public-agents-loadbalancer" {
   value = "${module.dcos.public-agents-loadbalancer}"
+}
+
+output "winagent-ips" {
+  value = "${module.winagent.public_ips}"
 }
