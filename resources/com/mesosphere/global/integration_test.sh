@@ -4,7 +4,8 @@ set -o errexit
 
 build_task() {
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
-  source ./create_terraformfile.sh ${PROVIDER}
+  # shellcheck source=./create_terraformfile.sh
+  source ${WORKSPACE}/create_terraformfile.sh ${PROVIDER}
   eval "$(ssh-agent)";
   if [ ! -f "$PWD/ssh-key" ]; then
     rm -f ssh-key.pub; ssh-keygen -t rsa -b 4096 -f "${PWD}"/ssh-key -P '';
@@ -16,14 +17,15 @@ build_task() {
   export TF_VAR_dcos_version="${DCOS_VERSION}"
   terraform apply -auto-approve
   set +o errexit
-  source ./setup_dcoscli.sh
-  source ./install_marathon-lb.sh
-  source ./agent-app-test.sh
-  if [ ${TF_MODULE_NAME} == "dcos" ] || [ ${TF_MODULE_NAME} == "windows-instance" ]; then
-    WINDOWS=true
-  fi
+  # shellcheck source=./setup_dcoscli.sh
+  source ${WORKSPACE}/setup_dcoscli.sh
+  # shellcheck source=./install_marathon-lb.sh
+  source ${WORKSPACE}/install_marathon-lb.sh
+  # shellcheck source=./agent_app_test.sh
+  source ${WORKSPACE}/agent_app_test.sh
   if ${WINDOWS}; then
-    source ./windows-agent-app-test.sh
+    # shellcheck source=./windows_agent_app_test.sh
+    source ${WORKSPACE}/windows_agent_app_test.sh
   fi
   echo -e "\e[32m Finished app deploy test! \e[0m"
   set -o errexit
@@ -61,7 +63,6 @@ main() {
 
     if [ -z "${TMP_DCOS_TERRAFORM}" ] || [ ! -d "${TMP_DCOS_TERRAFORM}" ] ; then
       PROVIDER=${2};
-      TF_MODULE_NAME=$(echo "${GIT_URL}" | grep -E -o 'terraform-\w+-.*' | cut -d'.' -f 1 | cut -d'-' -f3-)
       TMP_DCOS_TERRAFORM=$(mktemp -d -p ${WORKSPACE});
       echo "TMP_DCOS_TERRAFORM=${TMP_DCOS_TERRAFORM}" > ci-deploy.state
       CI_DEPLOY_STATE=$PWD/ci-deploy.state;

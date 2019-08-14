@@ -23,7 +23,12 @@ module "dcos" {
   num_private_agents = "${var.num_private_agents}"
   num_public_agents  = "${var.num_public_agents}"
 
-  ansible_bundled_container = "mesosphere/dcos-ansible-bundle:feature-windows-support-039d79d"
+  ansible_bundled_container = "sebbrandt87/dcos-ansible-bundle:windows-support"
+
+  ansible_additional_config = <<EOF
+wait_for_connection:
+  connection_timeout: 60
+EOF
 
   dcos_version = "${var.dcos_version}"
 
@@ -49,7 +54,7 @@ module "dcos" {
 
 module "winagent" {
   source  = "dcos-terraform/windows-instance/aws"
-  version = "0.0.1"
+  version = "~> 0.0.1"
 
   providers = {
     aws = "aws"
@@ -58,7 +63,7 @@ module "winagent" {
   cluster_name           = "${random_id.cluster_name.hex}"
   hostname_format        = "%[3]s-winagent%[1]d-%[2]s"
   aws_subnet_ids         = ["${module.dcos.infrastructure.vpc.subnet_ids}"]
-  aws_security_group_ids = ["${module.dcos.infrastructure.security_groups.admin}"]
+  aws_security_group_ids = ["${module.dcos.infrastructure.security_groups.internal}", "${module.dcos.infrastructure.security_groups.admin}"]
   aws_key_name           = "${module.dcos.infrastructure.aws_key_name}"
   aws_instance_type      = "m5a.xlarge"
   num                    = 1

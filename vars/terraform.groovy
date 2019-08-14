@@ -89,6 +89,8 @@ def call() {
                   env.UNIVERSAL_INSTALLER_BASE_VERSION = getTargetBranch().tokenize('/').last()
                 }
                 env.IS_UNIVERSAL_INSTALLER = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset +o errexit\nTFENV=\$(echo ${env.GIT_URL} | awk -F '-' '/terraform/ {print \$2}'); [ -z \$TFENV ] || echo 'YES'").trim()
+                env.TF_MODULE_NAME = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset +o errexit\necho ${env.GIT_URL} | grep -E -o 'terraform-\\w+-.*' | cut -d'.' -f 1 | cut -d'-' -f3-").trim()
+                env.ADD_WINDOWS_AGENT = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset +o errexit\nif [ ${env.TF_MODULE_NAME} == 'dcos' ] || [ ${env.TF_MODULE_NAME} == 'windows-instance' ]; then echo 'true'; else echo 'false'; fi").trim()
               }
               ansiColor('xterm') {
                 sh """
@@ -99,6 +101,8 @@ def call() {
                   echo -e "\\e[34m Detected and set provider: ${env.PROVIDER} \\e[0m"
                   echo -e "\\e[34m Detected universal install base version: ${env.UNIVERSAL_INSTALLER_BASE_VERSION} \\e[0m"
                   echo -e "\\e[34m Detected universal installer related build: ${env.IS_UNIVERSAL_INSTALLER} \\e[0m"
+                  echo -e "\\e[34m Detected terraform module name: ${env.TF_MODULE_NAME} \\e[0m"
+                  echo -e "\\e[34m Add windows agent and test it: ${env.ADD_WINDOWS_AGENT} \\e[0m"
                 """
               }
             }
@@ -213,19 +217,34 @@ def call() {
                     mkdir -p ${WORKSPACE}/${PROVIDER}-${UNIVERSAL_INSTALLER_BASE_VERSION}
                   """
                   script {
-                    def main_tf = libraryResource "com/mesosphere/global/terraform-file-dcos-terraform-test-examples/${PROVIDER}-${UNIVERSAL_INSTALLER_BASE_VERSION}/main.tf"
+                    def main_tf = ""
+                    if (env.ADD_WINDOWS_AGENT.toBoolean() == true) {
+                      main_tf = libraryResource "com/mesosphere/global/terraform-file-dcos-terraform-test-examples/${PROVIDER}-windows-agent-0.2.x/main.tf"
+                    } else {
+                      main_tf = libraryResource "com/mesosphere/global/terraform-file-dcos-terraform-test-examples/${PROVIDER}-${UNIVERSAL_INSTALLER_BASE_VERSION}/main.tf"
+                    }
                     writeFile file: "${PROVIDER}-${UNIVERSAL_INSTALLER_BASE_VERSION}/main.tf", text: main_tf
                   }
                   script {
-                    def ci_script_bash = libraryResource 'com/mesosphere/global/terraform_file_deploy.sh'
-                    writeFile file: 'ci-deploy.sh', text: ci_script_bash
+                    def integration_test = libraryResource 'com/mesosphere/global/integration_test.sh'
+                    writeFile file: 'integration_test.sh', text: integration_test
+                    def create_terraformfile = libraryResource 'com/mesosphere/global/create_terraformfile.sh'
+                    writeFile file: 'create_terraformfile.sh', text: create_terraformfile
+                    def setup_dcoscli = libraryResource 'com/mesosphere/global/setup_dcoscli.sh'
+                    writeFile file: 'setup_dcoscli.sh', text: setup_dcoscli
+                    def install_marathon_lb = libraryResource 'com/mesosphere/global/install_marathon-lb.sh'
+                    writeFile file: 'install_marathon-lb.sh', text: install_marathon_lb
+                    def agent_app_test = libraryResource 'com/mesosphere/global/agent_app_test.sh'
+                    writeFile file: 'agent_app_test.sh', text: agent_app_test
+                    def windows_agent_app_test = libraryResource 'com/mesosphere/global/windows_agent_app_test.sh'
+                    writeFile file: 'windows_agent_app_test.sh', text: windows_agent_app_test
                   }
                   sh """
                     #!/usr/bin/env sh
                     set +o xtrace
                     set -o errexit
 
-                    bash ./ci-deploy.sh --build ${PROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION}
+                    bash ./integration_test.sh --build ${PROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION}
                   """
                 }
               }
@@ -244,15 +263,15 @@ def call() {
                     )
                   ]) {
                     script {
-                      def ci_script_bash = libraryResource 'com/mesosphere/global/terraform_file_deploy.sh'
-                      writeFile file: 'ci-deploy.sh', text: ci_script_bash
+                      def integration_test = libraryResource 'com/mesosphere/global/integration_test.sh'
+                      writeFile file: 'integration_test.sh', text: integration_test
                     }
                     sh """
                       #!/usr/bin/env sh
                       set +o xtrace
                       set -o errexit
 
-                      bash ./ci-deploy.sh --post_build ${PROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION}
+                      bash ./integration_test.sh --post_build ${PROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION}
                     """
                   }
                 }

@@ -23,7 +23,11 @@ module "dcos" {
   num_private_agents = "${var.num_private_agents}"
   num_public_agents  = "${var.num_public_agents}"
 
-  ansible_bundled_container = "mesosphere/dcos-ansible-bundle:feature-windows-support-039d79d"
+  ansible_bundled_container = "mesosphere/dcos-ansible-bundle:feature-windows-support-c2d8296"
+
+  ansible_additional_config = <<EOF
+connection_timeout: 600
+EOF
 
   additional_windows_private_agent_ips       = ["${concat(module.winagent.private_ips)}"]
   additional_windows_private_agent_passwords = ["${concat(module.winagent.windows_passwords)}"]
