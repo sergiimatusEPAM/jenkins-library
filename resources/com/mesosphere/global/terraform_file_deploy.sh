@@ -42,11 +42,19 @@ generate_terraform_file() {
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
   PROVIDER=$(echo "${1}" | awk -F '-' '/terraform/ {print $3}')
   TF_MODULE_NAME=$(echo "${1}" | grep -E -o 'terraform-\w+-.*' | cut -d'.' -f 1 | cut -d'-' -f3-)
+  TF_MODULE_SOURCE="./../../../../.."
+  # change the module source here to real git source, otherwise dcos module seems to be not able to find itself
+  if [ ${TF_MODULE_NAME} == "dcos" ]; then
+    TF_MODULE_SOURCE="git::${GIT_URL}?ref=${BRANCH_NAME}"
+  fi
+  if [ ${TF_MODULE_NAME} == "dcos" ] || [ ${TF_MODULE_NAME} == "windows-instance" ]; then
+    WINDOWS=true
+  fi
   # we overwrite here the source with the real content of the WORKSPACE as we can rebuild builds in that case
   cat <<EOF | tee Terraformfile
 {
   "dcos-terraform/${TF_MODULE_NAME}/${PROVIDER}": {
-    "source":"./../../../../.."
+    "source": "${TF_MODULE_SOURCE}"
   }
 }
 EOF
@@ -82,12 +90,6 @@ main() {
       echo "${DCOS_CONFIG}"
       cp -fr ${WORKSPACE}/"${2}"-"${3}"/. "${TMP_DCOS_TERRAFORM}" || exit 1
     fi
-  fi
-
-  WINDOWS_ARG="--windows"
-  WINDOWS=false
-  if [ -n "$4" -a "$4" = "$WINDOWS_ARG" ]; then
-    WINDOWS=true
   fi
 
   case "${1}" in
