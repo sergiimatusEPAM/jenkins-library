@@ -39,7 +39,7 @@ EOF
     azure = "azure"
   }
 
-  dcos_version = "${var.dcos_version}"
+  dcos_version = "${var.dcos_version_windows}"
 
   dcos_variant              = "${var.dcos_variant}"
   dcos_license_key_contents = "${var.dcos_license_key_contents}"
@@ -74,8 +74,8 @@ variable "dcos_variant" {
 
 variable "dcos_license_key_contents" {}
 
-variable "dcos_version" {
-  default = "1.13.1"
+variable "dcos_version_windows" {
+  default = "1.13.0"
 }
 
 variable "num_masters" {
