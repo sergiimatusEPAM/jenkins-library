@@ -1,4 +1,4 @@
-provider "azure" {}
+provider "azurerm" {}
 
 data "http" "whatismyip" {
   url = "http://whatismyip.akamai.com/"
@@ -36,10 +36,10 @@ EOF
   dcos_security      = "strict"
 
   providers = {
-    azure = "azure"
+    azurerm = "azurerm"
   }
 
-  dcos_version = "${var.dcos_version_windows}"
+  dcos_version = "${var.dcos_version}"
 
   dcos_variant              = "${var.dcos_variant}"
   dcos_license_key_contents = "${var.dcos_license_key_contents}"
@@ -49,7 +49,7 @@ module "winagent" {
   source = "dcos-terraform/windows-instance/azurerm"
 
   providers = {
-    azure = "azure"
+    azurerm = "azurerm"
   }
 
   location            = "West US"
@@ -74,8 +74,8 @@ variable "dcos_variant" {
 
 variable "dcos_license_key_contents" {}
 
-variable "dcos_version_windows" {
-  default = "1.13.0"
+variable "dcos_version" {
+  default = "1.13.1"
 }
 
 variable "num_masters" {
