@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set +o xtrace
-set -o errexit
+set +o errexit
 
 echo -e "\e[34m deploying dotnet-sample \e[0m"
 "${TMP_DCOS_TERRAFORM}"/dcos marathon app add <<EOF

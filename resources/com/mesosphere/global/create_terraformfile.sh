@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set +o xtrace
-set -o errexit
+set +o errexit
 
 PROVIDER="${1}"
 TF_MODULE_SOURCE="./.."

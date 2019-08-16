@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set +o xtrace
-set -o errexit
+set +o errexit
 
 case "$(uname -s).$(uname -m)" in
   Linux.x86_64) system=linux/x86-64;;

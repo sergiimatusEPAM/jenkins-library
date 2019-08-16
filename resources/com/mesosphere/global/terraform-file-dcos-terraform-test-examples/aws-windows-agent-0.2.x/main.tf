@@ -125,7 +125,3 @@ output "cluster-address" {
 output "public-agents-loadbalancer" {
   value = "${module.dcos.public-agents-loadbalancer}"
 }
-
-output "winagent-ips" {
-  value = "${module.winagent.public_ips}"
-}

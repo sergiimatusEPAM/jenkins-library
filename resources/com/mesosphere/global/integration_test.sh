@@ -16,7 +16,6 @@ build_task() {
   # Deploy
   export TF_VAR_dcos_version="${DCOS_VERSION}"
   terraform apply -auto-approve
-  set +o errexit
   # shellcheck source=./setup_dcoscli.sh
   source ${WORKSPACE}/setup_dcoscli.sh
   # shellcheck source=./install_marathon-lb.sh
@@ -28,7 +27,6 @@ build_task() {
     source ${WORKSPACE}/windows_agent_app_test.sh
   fi
   echo -e "\e[32m Finished app deploy test! \e[0m"
-  set -o errexit
   # Expand
   export TF_VAR_num_public_agents="${EXPAND_NUM_PUBLIC_AGENTS:-2}"
   export TF_VAR_num_private_agents="${EXPAND_NUM_PRIVATE_AGENTS:-2}"

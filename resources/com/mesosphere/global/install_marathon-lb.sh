@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set +o xtrace
-set -o errexit
+set +o errexit
 
 "${TMP_DCOS_TERRAFORM}"/dcos security org service-accounts show marathon-lb-sa --json > /dev/null 2>&1
 if [ $? -ne 0 ];then

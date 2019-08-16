@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set +o xtrace
-set -o errexit
+set +o errexit
 
 echo -e "\e[34m deploying nginx \e[0m"
 cat <<EOF > nginx-default.conf
