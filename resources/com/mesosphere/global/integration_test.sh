@@ -55,10 +55,17 @@ build_task() {
 
 post_build_task() {
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
-  cp ./terraform.tfstate ${WORKSPACE}/terraform.pre-destroy.tfstate
-  terraform destroy -auto-approve
-  cp ./terraform.tfstate ${WORKSPACE}/terraform.post-destroy.tfstate
-  mv ./terraform.log ${WORKSPACE}/terraform.integration-test-step.log
+
+  if [ -f ./terraform.tfstate ]; then
+    cp ./terraform.tfstate ${WORKSPACE}/terraform.pre-destroy.tfstate
+    terraform destroy -auto-approve
+    cp ./terraform.tfstate ${WORKSPACE}/terraform.post-destroy.tfstate
+  fi
+
+  if [ -f ./terraform.log ]; then
+    mv ./terraform.log ${WORKSPACE}/terraform.integration-test-step.log
+  fi
+
   rm -fr "${CI_DEPLOY_STATE}" "${TMP_DCOS_TERRAFORM}"
 }
 

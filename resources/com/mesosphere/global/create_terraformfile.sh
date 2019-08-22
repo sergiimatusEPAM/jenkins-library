@@ -3,7 +3,7 @@ set +o xtrace
 set +o errexit
 
 PROVIDER="${1}"
-if [ ${TF_MODULE_NAME} == "dcos" ]; then
+if [ ${TF_MODULE_NAME} == "dcos" ] || [ ${TF_MODULE_NAME} == "windows-instance" ]; then
   TF_MODULE_SOURCE="./.."
 else
   TF_MODULE_SOURCE="./../../../../.."
