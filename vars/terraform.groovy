@@ -6,6 +6,8 @@ def call() {
       GIT_COMMITTER_NAME = 'dcos-sre-robot'
       GIT_COMMITTER_EMAIL = 'sre@mesosphere.io'
       TF_IN_AUTOMATION = '1'
+      TF_LOG = 'DEBUG'
+      TF_LOG_PATH = './terraform.log'
     }
     options {
       disableConcurrentBuilds()
@@ -46,7 +48,7 @@ def call() {
                   set +o xtrace
                   set -o errexit
 
-                  terraform init --upgrade
+                  terraform init -upgrade
                   terraform validate -check-variables=false
                 """
               }
@@ -85,7 +87,7 @@ def call() {
                   env.PROVIDER = 'aws'
                 }
                 env.UNIVERSAL_INSTALLER_BASE_VERSION = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset +o errexit\ngit describe --abbrev=0 --tags 2>/dev/null | sed -r 's/\\.([0-9]+)\$/.x/'").trim()
-                if (!env.UNIVERSAL_INSTALLER_BASE_VERSION) {
+                if (!env.UNIVERSAL_INSTALLER_BASE_VERSION || env.UNIVERSAL_INSTALLER_BASE_VERSION.take(1).toInteger() >= 1) {
                   env.UNIVERSAL_INSTALLER_BASE_VERSION = getTargetBranch().tokenize('/').last()
                 }
                 env.IS_UNIVERSAL_INSTALLER = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset +o errexit\nTFENV=\$(echo ${env.GIT_URL} | awk -F '-' '/terraform/ {print \$2}'); [ -z \$TFENV ] || echo 'YES'").trim()
@@ -273,6 +275,9 @@ def call() {
 
                       bash ./integration_test.sh --post_build ${PROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION}
                     """
+                    archiveArtifacts artifacts: 'terraform.state-*', fingerprint: true
+                    archiveArtifacts artifacts: 'terraform.log', fingerprint: true
+                    archiveArtifacts artifacts: 'terraform.integration-test-step.log', fingerprint: true
                   }
                 }
               }

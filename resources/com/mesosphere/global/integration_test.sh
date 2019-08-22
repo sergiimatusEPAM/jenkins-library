@@ -43,7 +43,10 @@ build_task() {
 
 post_build_task() {
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
+  cp ./terraform.state ${WORKSPACE}/terraform.state-pre-destroy
   terraform destroy -auto-approve
+  cp ./terraform.state ${WORKSPACE}/terraform.state-post-destroy
+  mv ./terraform.log ${WORKSPACE}/terraform.integration-test-step.log
   rm -fr "${CI_DEPLOY_STATE}" "${TMP_DCOS_TERRAFORM}"
 }
 
