@@ -64,28 +64,34 @@ EOF
 echo -e "\e[32m deployed nginx \e[0m"
 timeout -t 120 bash <<EOF || ( echo -e "\e[31m failed to reach nginx... \e[0m" && exit 1 )
 while ${TMP_DCOS_TERRAFORM}/dcos marathon app show nginx | jq -e '.tasksHealthy != 1' > /dev/null 2>&1; do
-if [ "$?" -ne "0" ]; then
-  echo -e "\e[34m waiting for nginx \e[0m"
-  sleep 10
-fi
+  if [ "$?" -ne "0" ]; then
+    echo -e "\e[34m waiting for nginx \e[0m"
+    sleep 10
+  fi
 done
 EOF
-echo -e "\e[32m healthy nginx \e[0m"
-echo -e "\e[34m curl testapp.d2iq.com at http://$(terraform output public-agents-loadbalancer) \e[0m"
-set -o xtrace
-curl -I \
-  --silent \
-  --connect-timeout 5 \
-  --max-time 10 \
-  --retry 5 \
-  --retry-delay 0 \
-  --retry-max-time 50 \
-  --retry-connrefuse \
-  -H "Host: testapp.d2iq.com" \
-  "http://$(terraform output public-agents-loadbalancer)" | grep -q -F "x-testheader: I-am-reachable"
-set +o xtrace
-if [ $? -ne 0 ]; then
+return_code=$?
+
+if [ $return_code -eq 0 ]; then
+  echo -e "\e[32m healthy nginx \e[0m"
+  echo -e "\e[34m curl testapp.d2iq.com at http://$(terraform output public-agents-loadbalancer) \e[0m"
+  set -o xtrace
+  curl -I \
+    --silent \
+    --connect-timeout 5 \
+    --max-time 10 \
+    --retry 5 \
+    --retry-delay 0 \
+    --retry-max-time 50 \
+    --retry-connrefuse \
+    -H "Host: testapp.d2iq.com" \
+    "http://$(terraform output public-agents-loadbalancer)" | grep -q -F "x-testheader: I-am-reachable"
+  return_code=$?
+  set +o xtrace
+fi
+
+if [ $return_code -ne 0 ]; then
   echo -e "\e[31m curl with Host header testapp.d2iq.com failed \e[0m" && exit 1
 else
-  echo -e "\e[32m curl with Host header testapp.d2iq.com successful \e[0m"
+  echo -e "\e[32m curl with Host header testapp.d2iq.com successful \e[0m" && return 0
 fi

@@ -35,4 +35,11 @@ while true; do
   sleep 10
   done
 EOF
-"${TMP_DCOS_TERRAFORM}"/dcos package install dcos-enterprise-cli --yes || exit 1
+return_code=$?
+
+if [ $return_code -eq 0 ]; then
+  "${TMP_DCOS_TERRAFORM}"/dcos package install dcos-enterprise-cli --yes || exit 1
+  return_code=$?
+fi
+
+if [ $return_code -eq 0 ]; then return 0; else return 1; fi

@@ -18,14 +18,26 @@ build_task() {
   terraform apply -auto-approve
   # shellcheck source=./setup_dcoscli.sh
   source ${WORKSPACE}/setup_dcoscli.sh
+  return_code=$?
+  if [ $return_code -eq 0 ]; then exit 1; fi
+
   # shellcheck source=./install_marathon-lb.sh
   source ${WORKSPACE}/install_marathon-lb.sh
+  return_code=$?
+  if [ $return_code -eq 0 ]; then exit 1; fi
+
   # shellcheck source=./agent_app_test.sh
   source ${WORKSPACE}/agent_app_test.sh
+  return_code=$?
+  if [ $return_code -eq 0 ]; then exit 1; fi
+
   if [ "${ADD_WINDOWS_AGENT}" == "true" ] ; then
     # shellcheck source=./windows_agent_app_test.sh
     source ${WORKSPACE}/windows_agent_app_test.sh
+    return_code=$?
+    if [ $return_code -eq 0 ]; then exit 1; fi
   fi
+
   echo -e "\e[32m Finished app deploy test! \e[0m"
   # Expand
   export TF_VAR_num_public_agents="${EXPAND_NUM_PUBLIC_AGENTS:-2}"

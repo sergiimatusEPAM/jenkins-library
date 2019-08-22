@@ -30,9 +30,10 @@ echo -e "\e[34m deploying dotnet-sample \e[0m"
     "portIndex": 0,
     "timeoutSeconds": 10,
     "delaySeconds": 15,
-    "protocol": "MESOS_HTTP",
+    "protocol": "HTTP",
     "path": "/",
-    "ipProtocol": "IPv4"
+    "ipProtocol": "IPv4",
+    "ignoreHttp1xx": false
   }],
   "labels": {
     "HAPROXY_GROUP": "external",
@@ -49,22 +50,28 @@ while ${TMP_DCOS_TERRAFORM}/dcos marathon app show dotnet-sample | jq -e '.tasks
   fi
 done
 EOF
-echo -e "\e[32m healthy dotnet-sample \e[0m"
-echo -e "\e[34m curl dotnet-sample.d2iq.com at http://$(terraform output public-agents-loadbalancer) \e[0m"
-set -o xtrace
-curl -I \
-  --silent \
-  --connect-timeout 5 \
-  --max-time 10 \
-  --retry 5 \
-  --retry-delay 0 \
-  --retry-max-time 50 \
-  --retry-connrefuse \
-  -H "Host: dotnet-sample.d2iq.com" \
-  "http://$(terraform output public-agents-loadbalancer)" | grep -q -F "HTTP/1.1 200 OK"
-set +o xtrace
-if [ $? -ne 0 ]; then
+return_code=$?
+
+if [ $return_code -eq 0 ]; then
+  echo -e "\e[32m healthy dotnet-sample \e[0m"
+  echo -e "\e[34m curl dotnet-sample.d2iq.com at http://$(terraform output public-agents-loadbalancer) \e[0m"
+  set -o xtrace
+  curl -I \
+    --silent \
+    --connect-timeout 5 \
+    --max-time 10 \
+    --retry 5 \
+    --retry-delay 0 \
+    --retry-max-time 50 \
+    --retry-connrefuse \
+    -H "Host: dotnet-sample.d2iq.com" \
+    "http://$(terraform output public-agents-loadbalancer)" | grep -q -F "HTTP/1.1 200 OK"
+  return_code=$?
+  set +o xtrace
+fi
+
+if [ $return_code -ne 0 ]; then
   echo -e "\e[31m curl with Host header dotnet-sample.d2iq.com failed \e[0m" && exit 1
 else
-  echo -e "\e[32m curl with Host header dotnet-sample.d2iq.com successful \e[0m"
+  echo -e "\e[32m curl with Host header dotnet-sample.d2iq.com successful \e[0m" && return 0
 fi
