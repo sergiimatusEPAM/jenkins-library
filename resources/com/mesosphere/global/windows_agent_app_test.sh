@@ -30,10 +30,10 @@ echo -e "\e[34m deploying dotnet-sample \e[0m"
     "portIndex": 0,
     "timeoutSeconds": 10,
     "delaySeconds": 15,
+    "ignoreHttp1xx": false,
     "protocol": "HTTP",
     "path": "/",
-    "ipProtocol": "IPv4",
-    "ignoreHttp1xx": false
+    "ipProtocol": "IPv4"
   }],
   "labels": {
     "HAPROXY_GROUP": "external",

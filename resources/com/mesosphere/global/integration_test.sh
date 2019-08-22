@@ -13,43 +13,85 @@ build_task() {
   ssh-add "${PWD}"/ssh-key
   terraform version
   terraform init -upgrade
+
   # Deploy
+  LINENUMBER_TF_LOG=0
   export TF_VAR_dcos_version="${DCOS_VERSION}"
   terraform apply -auto-approve
+  return_code=$?
+  echo -e "\e[34m terraform apply return code is: ${return_code} \e[0m"
+  if [ $return_code -ne 0 ]; then
+    echo -e "\e[34m There was an error within 'terraform apply' ... repeat it once more"
+    terraform apply -auto-approve
+    return_code=$?
+    echo -e "\e[34m terraform apply second run return code is: ${return_code} \e[0m"
+  fi
+  if [ $return_code -ne 0 ]; then echo -e "\e[31m Check the console output and terraform.log for the error! \e[0m"; exit 1; fi
+  echo -e "\e[32m Finished terraform apply! \e[0m"
+  LINENUMBER_TF_LOG="$(wc -l ./terraform.log)"
+
   # shellcheck source=./setup_dcoscli.sh
   source ${WORKSPACE}/setup_dcoscli.sh
   return_code=$?
   if [ $return_code -ne 0 ]; then exit 1; fi
+  echo -e "\e[32m Finished setup_dcoscli.sh! \e[0m"
 
   # shellcheck source=./install_marathon-lb.sh
   source ${WORKSPACE}/install_marathon-lb.sh
   return_code=$?
   if [ $return_code -ne 0 ]; then exit 1; fi
+  echo -e "\e[32m Finished install_marathon-lb.sh! \e[0m"
 
   # shellcheck source=./agent_app_test.sh
   source ${WORKSPACE}/agent_app_test.sh
   return_code=$?
   if [ $return_code -ne 0 ]; then exit 1; fi
+  echo -e "\e[32m Finished agent_app_test.sh! \e[0m"
 
   if [ "${ADD_WINDOWS_AGENT}" == "true" ] ; then
     # shellcheck source=./windows_agent_app_test.sh
     source ${WORKSPACE}/windows_agent_app_test.sh
     return_code=$?
     if [ $return_code -ne 0 ]; then exit 1; fi
+    echo -e "\e[32m Finished windows_agent_app_test.sh! \e[0m"
   fi
 
   echo -e "\e[32m Finished app deploy test! \e[0m"
   # Expand
+  echo -e "\e[32m Starting adding more agents! \e[0m"
   export TF_VAR_num_public_agents="${EXPAND_NUM_PUBLIC_AGENTS:-2}"
   export TF_VAR_num_private_agents="${EXPAND_NUM_PRIVATE_AGENTS:-2}"
   terraform apply -auto-approve
+  return_code=$?
+  echo -e "\e[34m terraform apply return code is: ${return_code} \e[0m"
+  if [ $return_code -ne 0 ]; then
+    echo -e "\e[34m There was an error within 'terraform apply' ... repeat it once more"
+    terraform apply -auto-approve
+    return_code=$?
+    echo -e "\e[34m terraform apply second run return code is: ${return_code} \e[0m"
+  fi
+  if [ $return_code -ne 0 ]; then echo -e "\e[31m Check the console output and terraform.log for the error! \e[0m"; exit 1; fi
+  echo -e "\e[32m Finished adding more agents! \e[0m"
+  LINENUMBER_TF_LOG="$(wc -l ./terraform.log)"
+
   # Upgrade, only if DCOS_VERSION_UPGRADE not empty and not matching DCOS_VERSION
   if [ ! -z "${DCOS_VERSION_UPGRADE}" ] && [ "${DCOS_VERSION_UPGRADE}" != "${DCOS_VERSION}" ]; then
     export TF_VAR_dcos_version="${DCOS_VERSION_UPGRADE}"
     if [ "${1}" == "0.1.x" ]; then
       export TF_VAR_dcos_install_mode="upgrade"
     fi
+    echo -e "\e[32m Starting cluster upgrade! \e[0m"
     terraform apply -auto-approve
+    return_code=$?
+    echo -e "\e[34m terraform apply return code is: ${return_code} \e[0m"
+    if [ $return_code -ne 0 ]; then
+      echo -e "\e[34m There was an error within 'terraform apply' ... repeat it once more"
+      terraform apply -auto-approve
+      return_code=$?
+      echo -e "\e[34m terraform apply second run return code is: ${return_code} \e[0m"
+    fi
+    if [ $return_code -ne 0 ]; then echo -e "\e[31m Check the console output and terraform.log for the error! \e[0m"; exit 1; fi
+    echo -e "\e[32m Finished cluster upgrade! \e[0m"
   fi
 }
 

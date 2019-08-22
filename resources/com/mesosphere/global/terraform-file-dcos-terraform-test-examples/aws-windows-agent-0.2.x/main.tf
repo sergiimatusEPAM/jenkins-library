@@ -23,7 +23,7 @@ module "dcos" {
   num_private_agents = "${var.num_private_agents}"
   num_public_agents  = "${var.num_public_agents}"
 
-  ansible_bundled_container = "sebbrandt87/dcos-ansible-bundle:windows-support"
+  ansible_bundled_container = "mesosphere/dcos-ansible-bundle:feature-windows-support-c2d8296"
 
   ansible_additional_config = <<EOF
 connection_timeout: 60
