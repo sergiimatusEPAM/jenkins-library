@@ -22,7 +22,7 @@ build_task() {
   source ${WORKSPACE}/install_marathon-lb.sh
   # shellcheck source=./agent_app_test.sh
   source ${WORKSPACE}/agent_app_test.sh
-  if ${WINDOWS}; then
+  if [ "${ADD_WINDOWS_AGENT}" == "true" ] ; then
     # shellcheck source=./windows_agent_app_test.sh
     source ${WORKSPACE}/windows_agent_app_test.sh
   fi
@@ -43,9 +43,9 @@ build_task() {
 
 post_build_task() {
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
-  cp ./terraform.state ${WORKSPACE}/terraform.state-pre-destroy
+  cp ./terraform.tfstate ${WORKSPACE}/terraform.pre-destroy.tfstate
   terraform destroy -auto-approve
-  cp ./terraform.state ${WORKSPACE}/terraform.state-post-destroy
+  cp ./terraform.tfstate ${WORKSPACE}/terraform.post-destroy.tfstate
   mv ./terraform.log ${WORKSPACE}/terraform.integration-test-step.log
   rm -fr "${CI_DEPLOY_STATE}" "${TMP_DCOS_TERRAFORM}"
 }

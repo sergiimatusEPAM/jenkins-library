@@ -275,8 +275,7 @@ def call() {
 
                       bash ./integration_test.sh --post_build ${PROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION}
                     """
-                    archiveArtifacts artifacts: 'terraform.state-*', fingerprint: true
-                    archiveArtifacts artifacts: 'terraform.log', fingerprint: true
+                    archiveArtifacts artifacts: 'terraform.*.tfstate', fingerprint: true
                     archiveArtifacts artifacts: 'terraform.integration-test-step.log', fingerprint: true
                   }
                 }
