@@ -32,7 +32,7 @@ EOF
   dcos_version = "${var.dcos_version}"
 
   dcos_oauth_enabled = "false"
-  dcos_security      = "strict"
+  dcos_security      = "permissive"
 
   dcos_instance_os             = "${var.dcos_instance_os}"
   bootstrap_instance_type      = "${var.bootstrap_instance_type}"

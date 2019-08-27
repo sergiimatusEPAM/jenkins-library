@@ -64,10 +64,8 @@ EOF
 echo -e "\e[32m deployed nginx \e[0m"
 timeout -t 120 bash <<EOF || ( echo -e "\e[31m failed to reach nginx... \e[0m" && exit 1 )
 while ${TMP_DCOS_TERRAFORM}/dcos marathon app show nginx | jq -e '.tasksHealthy != 1' > /dev/null 2>&1; do
-  if [ "$?" -ne "0" ]; then
-    echo -e "\e[34m waiting for nginx \e[0m"
-    sleep 10
-  fi
+  echo -e "\e[34m waiting for nginx \e[0m"
+  sleep 10
 done
 EOF
 return_code=$?
@@ -91,6 +89,10 @@ if [ $return_code -eq 0 ]; then
 fi
 
 if [ $return_code -ne 0 ]; then
+  curl -I \
+    --silent \
+    -H "Host: testapp.d2iq.com" \
+    "http://$(terraform output public-agents-loadbalancer)"
   echo -e "\e[31m curl with Host header testapp.d2iq.com failed \e[0m" && exit 1
 else
   echo -e "\e[32m curl with Host header testapp.d2iq.com successful \e[0m" && return 0

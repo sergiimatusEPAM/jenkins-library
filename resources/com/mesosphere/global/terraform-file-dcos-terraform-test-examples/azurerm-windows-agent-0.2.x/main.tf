@@ -33,7 +33,7 @@ EOF
   additional_windows_private_agent_passwords = ["${concat(module.winagent.windows_passwords)}"]
 
   dcos_oauth_enabled = "false"
-  dcos_security      = "strict"
+  dcos_security      = "permissive"
 
   providers = {
     azurerm = "azurerm"
