@@ -220,7 +220,7 @@ def call() {
                   """
                   script {
                     def main_tf = ""
-                    if (env.ADD_WINDOWS_AGENT.toBoolean() == true && env.PROVIDER != "gcp") {
+                    if (env.ADD_WINDOWS_AGENT.toBoolean() == true && env.PROVIDER != "gcp" && env.UNIVERSAL_INSTALLER_BASE_VERSION == "0.2.x") {
                       main_tf = libraryResource "com/mesosphere/global/terraform-file-dcos-terraform-test-examples/${PROVIDER}-windows-agent-0.2.x/main.tf"
                     } else {
                       main_tf = libraryResource "com/mesosphere/global/terraform-file-dcos-terraform-test-examples/${PROVIDER}-${UNIVERSAL_INSTALLER_BASE_VERSION}/main.tf"
