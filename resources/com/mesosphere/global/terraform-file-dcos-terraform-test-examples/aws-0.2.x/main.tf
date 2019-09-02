@@ -40,6 +40,7 @@ module "dcos" {
 
   dcos_variant              = "${var.dcos_variant}"
   dcos_license_key_contents = "${var.dcos_license_key_contents}"
+}
 
 variable "dcos_instance_os" {
   default = "centos_7.6"
