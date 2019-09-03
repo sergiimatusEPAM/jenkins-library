@@ -93,6 +93,9 @@ def call() {
                 env.IS_UNIVERSAL_INSTALLER = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset +o errexit\nTFENV=\$(echo ${env.GIT_URL} | awk -F '-' '/terraform/ {print \$2}'); [ -z \$TFENV ] || echo 'YES'").trim()
                 env.TF_MODULE_NAME = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset +o errexit\necho ${env.GIT_URL} | grep -E -o 'terraform-\\w+-.*' | cut -d'.' -f 1 | cut -d'-' -f3-").trim()
                 env.ADD_WINDOWS_AGENT = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset +o errexit\nif [ ${env.TF_MODULE_NAME} == 'dcos' ] || [ ${env.TF_MODULE_NAME} == 'windows-instance' ]; then echo 'true'; else echo 'false'; fi").trim()
+                if (env.PROVIDER == "gcp" || env.UNIVERSAL_INSTALLER_BASE_VERSION != "0.2.x") {
+                  env.ADD_WINDOWS_AGENT = "false"
+                }
               }
               ansiColor('xterm') {
                 sh """
@@ -220,7 +223,7 @@ def call() {
                   """
                   script {
                     def main_tf = ""
-                    if (env.ADD_WINDOWS_AGENT.toBoolean() == true && env.PROVIDER != "gcp" && env.UNIVERSAL_INSTALLER_BASE_VERSION == "0.2.x") {
+                    if (env.ADD_WINDOWS_AGENT.toBoolean() == true) {
                       main_tf = libraryResource "com/mesosphere/global/terraform-file-dcos-terraform-test-examples/${PROVIDER}-windows-agent-0.2.x/main.tf"
                     } else {
                       main_tf = libraryResource "com/mesosphere/global/terraform-file-dcos-terraform-test-examples/${PROVIDER}-${UNIVERSAL_INSTALLER_BASE_VERSION}/main.tf"
