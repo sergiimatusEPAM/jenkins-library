@@ -93,7 +93,7 @@ def call() {
                 env.IS_UNIVERSAL_INSTALLER = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset +o errexit\nTFENV=\$(echo ${env.GIT_URL} | awk -F '-' '/terraform/ {print \$2}'); [ -z \$TFENV ] || echo 'YES'").trim()
                 env.TF_MODULE_NAME = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset +o errexit\necho ${env.GIT_URL} | grep -E -o 'terraform-\\w+-.*' | cut -d'.' -f 1 | cut -d'-' -f3-").trim()
                 env.ADD_WINDOWS_AGENT = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset +o errexit\nif [ ${env.TF_MODULE_NAME} == 'dcos' ] || [ ${env.TF_MODULE_NAME} == 'windows-instance' ]; then echo 'true'; else echo 'false'; fi").trim()
-                if (env.PROVIDER == "gcp" || env.UNIVERSAL_INSTALLER_BASE_VERSION != "0.2.x") {
+                if (env.PROVIDER == "gcp" || env.UNIVERSAL_INSTALLER_BASE_VERSION == "0.1.x") {
                   env.ADD_WINDOWS_AGENT = "false"
                 }
               }
