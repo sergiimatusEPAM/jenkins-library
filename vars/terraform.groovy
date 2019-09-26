@@ -306,6 +306,8 @@ def call() {
               set +o xtrace
               set -o errexit
 
+              rm -f *.log
+              
               git add .
 
               if ! git diff-index --quiet HEAD --; then
