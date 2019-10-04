@@ -195,7 +195,7 @@ def call() {
             }
             agent { label 'dcos-terraform-cicd' }
             environment {
-              DCOS_VERSION = '1.13.3'
+              DCOS_VERSION = '1.13.5'
               // DCOS_VERSION_UPGRADE = '1.13.1'
               GOOGLE_APPLICATION_CREDENTIALS = credentials('dcos-terraform-ci-gcp')
               GOOGLE_PROJECT = 'massive-bliss-781'
@@ -307,7 +307,7 @@ def call() {
               set -o errexit
 
               rm -f *.log
-              
+
               git add .
 
               if ! git diff-index --quiet HEAD --; then
