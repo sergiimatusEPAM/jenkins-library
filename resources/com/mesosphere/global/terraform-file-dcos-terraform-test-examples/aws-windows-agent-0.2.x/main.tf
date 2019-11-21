@@ -95,7 +95,7 @@ variable "dcos_variant" {
 variable "dcos_license_key_contents" {}
 
 variable "dcos_version" {
-  default = "1.13.1"
+  default = "2.0.0"
 }
 
 variable "num_masters" {

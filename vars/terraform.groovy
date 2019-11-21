@@ -197,8 +197,8 @@ def call() {
             }
             agent { label 'dcos-terraform-cicd' }
             environment {
-              DCOS_VERSION = '1.13.5'
-              // DCOS_VERSION_UPGRADE = '1.13.1'
+              DCOS_VERSION = '2.0.0'
+              // DCOS_VERSION_UPGRADE = '2.0.0'
               GOOGLE_APPLICATION_CREDENTIALS = credentials('dcos-terraform-ci-gcp')
               GOOGLE_PROJECT = 'massive-bliss-781'
               GOOGLE_REGION = 'us-west1'
