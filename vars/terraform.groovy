@@ -251,7 +251,7 @@ def call() {
                     set +o xtrace
                     set -o errexit
 
-                    bash ./integration_test.sh --build ${MODULEPROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION}
+                    bash ./integration_test.sh --build ${PROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION} ${MODULEPROVIDER}
                   """
                 }
               }
@@ -278,7 +278,7 @@ def call() {
                       set +o xtrace
                       set -o errexit
 
-                      bash ./integration_test.sh --post_build ${MODULEPROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION}
+                      bash ./integration_test.sh --post_build ${PROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION} ${MODULEPROVIDER}
                     """
                     archiveArtifacts artifacts: 'terraform.*.tfstate', fingerprint: true
                     archiveArtifacts artifacts: 'terraform.integration-test-step.log', fingerprint: true

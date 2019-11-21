@@ -5,7 +5,7 @@ set -o errexit
 build_task() {
   cd "${TMP_DCOS_TERRAFORM}" || exit 1
   # shellcheck source=./create_terraformfile.sh
-  source ${WORKSPACE}/create_terraformfile.sh ${PROVIDER}
+  source ${WORKSPACE}/create_terraformfile.sh ${MODULEPROVIDER}
   eval "$(ssh-agent)";
   if [ ! -f "$PWD/ssh-key" ]; then
     rm -f ssh-key.pub; ssh-keygen -t rsa -b 4096 -f "${PWD}"/ssh-key -P '';
@@ -112,7 +112,7 @@ post_build_task() {
 }
 
 main() {
-  if [ $# -eq 3 ]; then
+  if [ $# -eq 4 ]; then
     if [ -f "ci-deploy.state"  ]; then
       eval "$(cat ci-deploy.state)"
     fi
@@ -126,6 +126,7 @@ main() {
     if [ -z "${TMP_DCOS_TERRAFORM}" ] || [ ! -d "${TMP_DCOS_TERRAFORM}" ] ; then
       PROVIDER=${2};
       UNIVERSAL_INSTALLER_BASE_VERSION=${3};
+      MODULEPROVIDER=${4};
       TMP_DCOS_TERRAFORM=$(mktemp -d -p ${WORKSPACE});
       echo "TMP_DCOS_TERRAFORM=${TMP_DCOS_TERRAFORM}" > ci-deploy.state
       CI_DEPLOY_STATE=$PWD/ci-deploy.state;
@@ -135,7 +136,7 @@ main() {
       export LOG_STATE=${TMP_DCOS_TERRAFORM}/log_state;
       echo "LOG_STATE=${TMP_DCOS_TERRAFORM}/log_state" >> ci-deploy.state
       echo "${DCOS_CONFIG}"
-      cp -fr ${WORKSPACE}/"${2}"-"${3}"/. "${TMP_DCOS_TERRAFORM}" || exit 1
+      cp -fr ${WORKSPACE}/"${PROVIDER}"-"${UNIVERSAL_INSTALLER_BASE_VERSION}"/. "${TMP_DCOS_TERRAFORM}" || exit 1
     fi
   fi
 
@@ -143,7 +144,7 @@ main() {
     --build) build_task; exit 0;;
     --post_build) post_build_task; exit 0;;
   esac
-  echo "invalid parameter ${1}. Must be one of --build or --post_build <provider> <version>"
+  echo "invalid parameter ${1}. Must be one of --build or --post_build <provider> <version> <moduleprovider>"
   exit 1
 }
 
