@@ -82,6 +82,7 @@ def call() {
             steps {
               script {
                 env.PROVIDER = sh (returnStdout: true, script: "#!/usr/bin/env sh\nset +o errexit\necho ${env.GIT_URL} | awk -F '-' '/terraform/ {print \$3}'").trim()
+                env.MODULEPROVIDER = env.PROVIDER
                 def m = env.PROVIDER ==~ /^(aws|azurerm|gcp)$/
                 if (!m) {
                   env.PROVIDER = 'aws'
@@ -104,6 +105,7 @@ def call() {
                   set -o errexit
 
                   echo -e "\\e[34m Detected and set provider: ${env.PROVIDER} \\e[0m"
+                  echo -e "\\e[34m Detected and set module provider: ${env.MODULEPROVIDER} \\e[0m"
                   echo -e "\\e[34m Detected universal install base version: ${env.UNIVERSAL_INSTALLER_BASE_VERSION} \\e[0m"
                   echo -e "\\e[34m Detected universal installer related build: ${env.IS_UNIVERSAL_INSTALLER} \\e[0m"
                   echo -e "\\e[34m Detected terraform module name: ${env.TF_MODULE_NAME} \\e[0m"
@@ -249,7 +251,7 @@ def call() {
                     set +o xtrace
                     set -o errexit
 
-                    bash ./integration_test.sh --build ${PROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION}
+                    bash ./integration_test.sh --build ${MODULEPROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION}
                   """
                 }
               }
@@ -276,7 +278,7 @@ def call() {
                       set +o xtrace
                       set -o errexit
 
-                      bash ./integration_test.sh --post_build ${PROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION}
+                      bash ./integration_test.sh --post_build ${MODULEPROVIDER} ${UNIVERSAL_INSTALLER_BASE_VERSION}
                     """
                     archiveArtifacts artifacts: 'terraform.*.tfstate', fingerprint: true
                     archiveArtifacts artifacts: 'terraform.integration-test-step.log', fingerprint: true

@@ -77,7 +77,7 @@ build_task() {
   # Upgrade, only if DCOS_VERSION_UPGRADE not empty and not matching DCOS_VERSION
   if [ ! -z "${DCOS_VERSION_UPGRADE}" ] && [ "${DCOS_VERSION_UPGRADE}" != "${DCOS_VERSION}" ]; then
     export TF_VAR_dcos_version="${DCOS_VERSION_UPGRADE}"
-    if [ "${1}" == "0.1.x" ]; then
+    if [ "${UNIVERSAL_INSTALLER_BASE_VERSION}" == "0.1.x" ]; then
       export TF_VAR_dcos_install_mode="upgrade"
     fi
     echo -e "\e[32m Starting cluster upgrade! \e[0m"
@@ -125,6 +125,7 @@ main() {
 
     if [ -z "${TMP_DCOS_TERRAFORM}" ] || [ ! -d "${TMP_DCOS_TERRAFORM}" ] ; then
       PROVIDER=${2};
+      UNIVERSAL_INSTALLER_BASE_VERSION=${3};
       TMP_DCOS_TERRAFORM=$(mktemp -d -p ${WORKSPACE});
       echo "TMP_DCOS_TERRAFORM=${TMP_DCOS_TERRAFORM}" > ci-deploy.state
       CI_DEPLOY_STATE=$PWD/ci-deploy.state;
@@ -139,7 +140,7 @@ main() {
   fi
 
   case "${1}" in
-    --build) build_task "${3}"; exit 0;;
+    --build) build_task; exit 0;;
     --post_build) post_build_task; exit 0;;
   esac
   echo "invalid parameter ${1}. Must be one of --build or --post_build <provider> <version>"
