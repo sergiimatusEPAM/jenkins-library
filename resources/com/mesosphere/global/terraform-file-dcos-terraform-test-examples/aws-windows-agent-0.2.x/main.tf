@@ -23,9 +23,18 @@ module "dcos" {
   num_private_agents = "${var.num_private_agents}"
   num_public_agents  = "${var.num_public_agents}"
 
-  ansible_bundled_container = "mesosphere/dcos-ansible-bundle:feature-windows-support-5dc59ca"
+  ansible_bundled_container = "mesosphere/dcos-ansible-bundle:windows-beta-support"
 
+  #TO BE DELETED after Windows GA release
+  custom_dcos_download_path = "https://downloads.mesosphere.com/dcos-enterprise/testing/master/dcos_generate_config.ee.sh"
+  dcos_config = <<EOF
+enable_windows_agents: true
+EOF
+
+  #TO BE DELETED after Windows GA release
   ansible_additional_config = <<EOF
+dcos:
+   download_win: https://downloads.mesosphere.com/dcos-enterprise/testing/master/windows/dcos_generate_config_win.ee.sh
 connection_timeout: 60
 EOF
 
@@ -95,7 +104,7 @@ variable "dcos_variant" {
 variable "dcos_license_key_contents" {}
 
 variable "dcos_version" {
-  default = "2.0.0"
+  default = "2.1.0"
 }
 
 variable "num_masters" {
