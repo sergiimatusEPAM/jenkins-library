@@ -6,7 +6,7 @@ echo -e "\e[34m deploying dotnet-sample \e[0m"
 "${TMP_DCOS_TERRAFORM}"/dcos marathon app add <<EOF
 {
   "id": "/dotnet-sample",
-  "constraints": [[ "os", "LIKE", "windows" ]],
+  "constraints": [[ "@region", "LIKE", "windows" ]],
   "networks": [
     { "mode": "container/bridge" }
   ],
